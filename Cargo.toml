@@ -3,9 +3,9 @@ name = "stargazer"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
-slint = "1.2.2"
-
 [[bin]]
 name = "stargazer"
 path = "src/main.rs"
+
+[dependencies]
+iced = "0.10.0"
