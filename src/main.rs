@@ -1,14 +1,47 @@
 //iced
-use iced::Settings;
-use iced::Sandbox;
-use iced::Element;
+use iced::{
+    Settings,
+    Sandbox,
+    Element,
+    window::{
+        Icon,
+        Level, 
+        Position, 
+        Settings as WindowSettings
+    }
+};
+
 //modules
 //login page
 use login_page::{LoginPage, LoginPageMessage};
 mod login_page;
 
+//Consts
+const WINDOW_WIDTH: u32 = 1420;
+const WINDOW_HEIGHT: u32 = 740;
+
 fn main() -> Result<(), iced::Error> {
-    MainApp::run(Settings::default())
+
+    //initial window settings
+    let default_window_settings = WindowSettings{
+        size: (WINDOW_WIDTH, WINDOW_HEIGHT),
+        position: Position::default(),
+        min_size: None,
+        max_size: None,
+        visible: true,
+        resizable: false,
+        decorations: true,
+        transparent: false,
+        level: Level::default(),
+        icon: None,
+        platform_specific: Default::default(),
+    }; 
+
+    //run the app
+    MainApp::run(Settings {
+        window: default_window_settings,
+        ..Settings::default()
+    })
 }
 
 //main controller and page manager for our application
