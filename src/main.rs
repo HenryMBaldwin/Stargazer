@@ -17,8 +17,8 @@ use login_page::{LoginPage, LoginPageMessage};
 mod login_page;
 
 //Consts
-const WINDOW_WIDTH: u32 = 1420;
-const WINDOW_HEIGHT: u32 = 740;
+const WINDOW_WIDTH: u32 = 910;
+const WINDOW_HEIGHT: u32 = 496;
 
 fn main() -> Result<(), iced::Error> {
 
@@ -54,7 +54,7 @@ pub struct MainApp{
 }
 
 //Message will use sub messages for each of the page
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum AppMessage {
     //Message to change between main views
     ChangeView(Views),

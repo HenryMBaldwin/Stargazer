@@ -8,4 +8,4 @@ name = "stargazer"
 path = "src/main.rs"
 
 [dependencies]
-iced = "0.10.0"
+iced = {version = "0.10.0", features = ["image"] }
