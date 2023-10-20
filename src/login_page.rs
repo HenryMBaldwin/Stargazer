@@ -21,15 +21,24 @@ pub enum LoginPageMessage{
     LoginPressed,
     
 }
+
+// impl Into<Element<'_, AppMessage, iced::Renderer<iced::Theme>>> for Container<'_, LoginPageMessage, _>{
+//     fn into(self) -> Element<'static, AppMessage, iced::Renderer<iced::Theme>> {
+//         todo!()
+//     }
+// }
+
 impl LoginPage {
     
     pub fn new() -> Self {
-        Self { username: String::new(),
+        Self { 
+            
+            username: String::new(),
             password: String::new(), 
             username_state: text_input::State::new(), 
             password_state: text_input::State::new(), 
             login_button: button::State::new(), 
-            stargazer_image: image::Handle::from_path("../assets/stargazer_black_vert_transparent.png")
+            stargazer_image: image::Handle::from_path("assets/stargazer_black_vert_transparent.png")
          }
     }
 
@@ -39,7 +48,8 @@ impl LoginPage {
             _ => ()
         }
     }
-    pub fn view(&self) -> Element<AppMessage> {
+
+    pub fn view(&self) -> Element<LoginPageMessage> {
         
         let img = Image::new(self.stargazer_image.clone())
             .width(Length::Fixed(150.0))
@@ -85,7 +95,7 @@ impl LoginPage {
             .center_y()
             .width(Length::Fill)
             .height(Length::Fill)
-            .into();
+            .into()
     }
 }
 

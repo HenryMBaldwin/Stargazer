@@ -59,7 +59,7 @@ pub enum AppMessage {
     //Message to change between main views
     ChangeView(Views),
     //page messages
-    LoginPageMessage(LoginPageMessage)
+    LoginPageMessage(LoginPageMessage),
     //..
 }
 
@@ -77,7 +77,7 @@ impl Sandbox for MainApp {
         MainApp { 
             //init with login page visible
             current_view: Views::LoginPage,
-            login_page: LoginPage }
+            login_page: LoginPage::new() }
     }
 
     fn title(&self) -> String{
@@ -95,7 +95,7 @@ impl Sandbox for MainApp {
     fn view(&self) -> Element<'_, Self::Message> {
         match self.current_view {
             //Views
-            Views::LoginPage => self.login_page.view()
+            Views::LoginPage => self.login_page.view().map(move |message| AppMessage::LoginPageMessage(message))
             //..
         }
     }
