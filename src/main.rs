@@ -13,8 +13,11 @@ use iced::{
 
 //modules
 //login page
-use login_page::{LoginPage, LoginPageMessage};
 mod login_page;
+use login_page::{LoginPage, LoginPageMessage};
+
+//styles
+mod styles;
 
 //Consts
 const WINDOW_WIDTH: u32 = 910;

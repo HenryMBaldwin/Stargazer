@@ -1,15 +1,14 @@
 //iced
 use iced::widget::{button, image, text_input, Button, Text, Column, Container, Image, Row, TextInput};
-use iced::alignment::Alignment;
-use iced::{Element, Length};
-use crate::{AppMessage, Views};
+use iced::alignment::{Alignment, Horizontal};
+use iced::{Color, Element, Length, theme};
 
+//Styles
+use crate::styles;
+use styles::LoginButtonStyle;
 pub struct LoginPage {
     username: String,
     password: String,
-    username_state: text_input::State,
-    password_state: text_input::State,
-    login_button: button::State,
     stargazer_image: image::Handle,
 } 
 
@@ -22,12 +21,8 @@ pub enum LoginPageMessage{
     
 }
 
-// impl Into<Element<'_, AppMessage, iced::Renderer<iced::Theme>>> for Container<'_, LoginPageMessage, _>{
-//     fn into(self) -> Element<'static, AppMessage, iced::Renderer<iced::Theme>> {
-//         todo!()
-//     }
-// }
 
+//Impl
 impl LoginPage {
     
     pub fn new() -> Self {
@@ -35,9 +30,6 @@ impl LoginPage {
             
             username: String::new(),
             password: String::new(), 
-            username_state: text_input::State::new(), 
-            password_state: text_input::State::new(), 
-            login_button: button::State::new(), 
             stargazer_image: image::Handle::from_path("assets/stargazer_black_vert_transparent.png")
          }
     }
@@ -49,11 +41,12 @@ impl LoginPage {
         }
     }
 
+    
     pub fn view(&self) -> Element<LoginPageMessage> {
         
         let img = Image::new(self.stargazer_image.clone())
-            .width(Length::Fixed(150.0))
-            .height(Length::Fixed(150.0));
+            .width(Length::Fixed(300.0))
+            .height(Length::Fixed(200.0));
 
         // Input fields
         let username_input = TextInput::new(
@@ -62,7 +55,7 @@ impl LoginPage {
         )
         .on_input(LoginPageMessage::UsernameChanged)
         .padding(10)
-        .width(Length::Fill);
+        .width(Length::Fixed(300.0));
 
         let password_input = TextInput::new(
             "Password...",
@@ -70,12 +63,14 @@ impl LoginPage {
         )
         .on_input(LoginPageMessage::PasswordChanged)
         .padding(10)
-        .width(Length::Fill)
+        .width(Length::Fixed(300.0))
         .password();
 
         // Login button
-        let login_button = Button::new( Text::new("Login"))
-            .on_press(LoginPageMessage::LoginPressed);
+        let login_button = Button::new( Text::new("Login").horizontal_alignment(Horizontal::Center))
+            .on_press(LoginPageMessage::LoginPressed)
+            .width(Length::Fixed(300.0))
+            .style(iced::theme::Button::Custom(Box::new(LoginButtonStyle)));
 
         // Layout
         let col = Column::new()
@@ -97,5 +92,6 @@ impl LoginPage {
             .height(Length::Fill)
             .into()
     }
+
 }
 
