@@ -1,14 +1,15 @@
 //iced
 use iced::widget::{button, image, text_input, Button, Text, Column, Container, Image, Row, TextInput};
 use iced::alignment::{Alignment, Horizontal};
-use iced::{Color, Element, Length, theme};
+use iced::{Color, Element, Length, theme, Command};
 
 //Styles
-use crate::styles;
+use crate::{styles, AppMessage};
 use styles::LoginButtonStyle;
 pub struct LoginPage {
     username: String,
     password: String,
+    password_id: text_input::Id,
     stargazer_image: image::Handle,
 } 
 
@@ -16,7 +17,9 @@ pub struct LoginPage {
 pub enum LoginPageMessage{
     //Messages for Login page
     UsernameChanged(String),
+    UsernameSubmitted,
     PasswordChanged(String),
+    //Password submitted is the same as LoginPressed
     LoginPressed,
     
 }
@@ -30,15 +33,23 @@ impl LoginPage {
             
             username: String::new(),
             password: String::new(), 
+            password_id: text_input::Id::unique(),
             stargazer_image: image::Handle::from_path("assets/stargazer_black_vert_transparent.png")
          }
     }
 
-    pub fn update(&mut self, message: LoginPageMessage) {
+    pub fn update(&mut self, message: LoginPageMessage) -> Command<AppMessage>{
         match message {
-            LoginPageMessage::UsernameChanged(user) => self.username = user,
-            LoginPageMessage::PasswordChanged(pass) => self.password = pass,
-            _ => ()
+            LoginPageMessage::UsernameChanged(user) => {
+                self.username = user;
+                Command::none()
+            }
+            LoginPageMessage::PasswordChanged(pass) => {
+                self.password = pass;
+                Command::none()
+            }
+            LoginPageMessage::UsernameSubmitted => text_input::focus(self.password_id.clone()),
+            _ => Command::none()
         }
     }
 
@@ -55,6 +66,7 @@ impl LoginPage {
             &self.username
         )
         .on_input(LoginPageMessage::UsernameChanged)
+        .on_submit(LoginPageMessage::UsernameSubmitted)
         .padding(10)
         .width(Length::Fixed(300.0));
 
@@ -63,6 +75,8 @@ impl LoginPage {
             &self.password,
         )
         .on_input(LoginPageMessage::PasswordChanged)
+        .on_submit(LoginPageMessage::LoginPressed)
+        .id(self.password_id.clone())
         .padding(10)
         .width(Length::Fixed(300.0))
         .password();

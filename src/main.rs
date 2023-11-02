@@ -1,7 +1,9 @@
 //iced
 use iced::{
+    Command,
+    theme::Theme,
     Settings,
-    Sandbox,
+    Application,
     Element,
     window::{
         Icon,
@@ -73,24 +75,37 @@ pub enum Views {
     //..
 }
 
-impl Sandbox for MainApp {
+impl Application for MainApp {
     type Message = AppMessage;
+    type Theme = Theme;
+    type Executor = iced::executor::Default;
+    type Flags = ();
 
-    fn new() -> Self {
-        MainApp { 
-            //init with login page visible
-            current_view: Views::LoginPage,
-            login_page: LoginPage::new() }
+    fn new(_flage: ()) -> (MainApp, Command<AppMessage>) {
+        (
+            MainApp { 
+                //init with login page visible
+                current_view: Views::LoginPage,
+                login_page: LoginPage::new() 
+            },
+            Command::none()
+        )
+        
     }
 
     fn title(&self) -> String{
         String::from("Stargazer")
     }
 
-    fn update(&mut self, message: Self::Message) {
+    fn update(&mut self, message: Self::Message) -> Command<AppMessage> {
         match message {
-            AppMessage::ChangeView(view) => self.current_view = view,
-            AppMessage::LoginPageMessage(msg) => self.login_page.update(msg)
+            AppMessage::ChangeView(view) => {
+                self.current_view = view;
+                Command::none()
+            },
+            AppMessage::LoginPageMessage(msg) => {
+                self.login_page.update(msg)
+            }
         }
     }
 

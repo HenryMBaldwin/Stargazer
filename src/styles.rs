@@ -1,5 +1,5 @@
 
-
+//not going to use this for now
 //iced
 use iced::{
     widget::{
@@ -30,14 +30,14 @@ impl button::StyleSheet for LoginButtonStyle {
         }
     }
 
-    fn pressed(&self, style: &Self::Style) -> button::Appearance {
+    fn pressed(&self, _style: &Self::Style) -> button::Appearance {
         button::Appearance {
             background: Some(Background::Color(Color::from_rgb(132.0, 125.0, 87.0))),
             ..Appearance::default()
         }
     }
 
-    fn disabled(&self, style: &Self::Style) -> button::Appearance {
+    fn disabled(&self, _style: &Self::Style) -> button::Appearance {
         button::Appearance {
             background: Some(Background::Color(Color::from_rgb(132.0, 125.0, 87.0))),
             ..Appearance::default()
