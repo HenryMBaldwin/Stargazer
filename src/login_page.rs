@@ -36,7 +36,8 @@ impl LoginPage {
 
     pub fn update(&mut self, message: LoginPageMessage) {
         match message {
-            //TODO
+            LoginPageMessage::UsernameChanged(user) => self.username = user,
+            LoginPageMessage::PasswordChanged(pass) => self.password = pass,
             _ => ()
         }
     }
@@ -49,7 +50,7 @@ impl LoginPage {
             .height(Length::Fixed(200.0));
 
         // Input fields
-        let username_input = TextInput::new(
+        let username_input = text_input(
             "Username...",
             &self.username
         )
@@ -57,7 +58,7 @@ impl LoginPage {
         .padding(10)
         .width(Length::Fixed(300.0));
 
-        let password_input = TextInput::new(
+        let password_input = text_input(
             "Password...",
             &self.password,
         )
@@ -69,8 +70,8 @@ impl LoginPage {
         // Login button
         let login_button = Button::new( Text::new("Login").horizontal_alignment(Horizontal::Center))
             .on_press(LoginPageMessage::LoginPressed)
-            .width(Length::Fixed(300.0))
-            .style(iced::theme::Button::Custom(Box::new(LoginButtonStyle)));
+            .width(Length::Fixed(300.0));
+            //.style(iced::theme::Button::Custom(Box::new(LoginButtonStyle)));
 
         // Layout
         let col = Column::new()
