@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 //iced
 use iced::{
     Command,
@@ -13,6 +14,7 @@ use iced::{
     }
 };
 
+
 //modules
 //login page
 mod login_page;
@@ -24,6 +26,7 @@ mod styles;
 //Consts
 const WINDOW_WIDTH: u32 = 910;
 const WINDOW_HEIGHT: u32 = 496;
+
 
 fn main() -> Result<(), iced::Error> {
 
