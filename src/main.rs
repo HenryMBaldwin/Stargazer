@@ -13,19 +13,27 @@ use iced::{
         Settings as WindowSettings
     }
 };
-
+use std::sync::Arc;
 
 //modules
 //login page
 mod login_page;
 use login_page::{LoginPage, LoginPageMessage};
 
+
+//success page
+mod success_page;
+use success_page::SuccessPage;
 //styles
 mod styles;
 
+//Orion APi
+mod orion_api;
+use orion_api::OrionAPI;
 //Consts
 const WINDOW_WIDTH: u32 = 910;
 const WINDOW_HEIGHT: u32 = 496;
+
 
 
 fn main() -> Result<(), iced::Error> {
@@ -44,6 +52,8 @@ fn main() -> Result<(), iced::Error> {
         icon: None,
         platform_specific: Default::default(),
     }; 
+    
+    //new orion_api
 
     //run the app
     MainApp::run(Settings {
@@ -54,10 +64,12 @@ fn main() -> Result<(), iced::Error> {
 
 //main controller and page manager for our application
 pub struct MainApp{
+    oapi: Arc<OrionAPI>,
     //currently displayed page
     current_view: Views,
     //pages
-    login_page: LoginPage
+    login_page: LoginPage,
+    success_page: SuccessPage
     //..
 }
 
@@ -68,28 +80,34 @@ pub enum AppMessage {
     ChangeView(Views),
     //page messages
     LoginPageMessage(LoginPageMessage),
+    //other
+    LoginFailed,
     //..
 }
 
 #[derive(Debug,Clone,Copy)]
 pub enum Views {
     //Pages
-    LoginPage
+    LoginPage,
+    SuccessPage
     //..
 }
 
-impl Application for MainApp {
+impl Application for MainApp { 
     type Message = AppMessage;
     type Theme = Theme;
     type Executor = iced::executor::Default;
     type Flags = ();
 
     fn new(_flage: ()) -> (MainApp, Command<AppMessage>) {
-        (
+        let oapi = Arc::new(OrionAPI::new()).clone();
+        (   
             MainApp { 
+                oapi: oapi.clone(),
                 //init with login page visible
                 current_view: Views::LoginPage,
-                login_page: LoginPage::new() 
+                login_page: LoginPage::new(oapi.clone()), 
+                success_page: SuccessPage::new()
             },
             Command::none()
         )
@@ -109,6 +127,7 @@ impl Application for MainApp {
             AppMessage::LoginPageMessage(msg) => {
                 self.login_page.update(msg)
             }
+            _ => Command::none()
         }
     }
 
@@ -116,7 +135,8 @@ impl Application for MainApp {
     fn view(&self) -> Element<'_, Self::Message> {
         match self.current_view {
             //Views
-            Views::LoginPage => self.login_page.view().map(move |message| AppMessage::LoginPageMessage(message))
+            Views::LoginPage => self.login_page.view().map(move |message| AppMessage::LoginPageMessage(message)),
+            Views::SuccessPage => self.success_page.view()
             //..
         }
     }
