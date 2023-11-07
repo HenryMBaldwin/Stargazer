@@ -1,12 +1,20 @@
+use std::sync::Arc;
+use reqwest::StatusCode;
 //iced
 use iced::widget::{button, image, text_input, Button, Text, Column, Container, Image, Row, TextInput};
 use iced::alignment::{Alignment, Horizontal};
 use iced::{Color, Element, Length, theme, Command};
 
 //Styles
-use crate::{styles, AppMessage};
+use crate::{styles, AppMessage, orion_api, Views};
+
 use styles::LoginButtonStyle;
+
+//Orion API
+use orion_api::OrionAPI;
+
 pub struct LoginPage {
+    oapi: Arc<OrionAPI>,
     username: String,
     password: String,
     password_id: text_input::Id,
@@ -28,9 +36,9 @@ pub enum LoginPageMessage{
 //Impl
 impl LoginPage {
     
-    pub fn new() -> Self {
+    pub fn new(oapi: Arc<OrionAPI>) -> Self {
         Self { 
-            
+            oapi,
             username: String::new(),
             password: String::new(), 
             password_id: text_input::Id::unique(),
@@ -49,7 +57,20 @@ impl LoginPage {
                 Command::none()
             }
             LoginPageMessage::UsernameSubmitted => text_input::focus(self.password_id.clone()),
-            _ => Command::none()
+            LoginPageMessage::LoginPressed => {
+                let username = self.username.clone();
+                let password = self.password.clone();
+                let oapi = self.oapi.clone();
+                Command::perform(async move {oapi.login(&username, &password).await},
+             |status| {
+                if status.is_ok() { 
+                    AppMessage::ChangeView(Views::SuccessPage)
+                }
+                else {
+                    AppMessage::LoginFailed
+                }
+            })}
+                
         }
     }
 
@@ -85,7 +106,6 @@ impl LoginPage {
         let login_button = Button::new( Text::new("Login").horizontal_alignment(Horizontal::Center))
             .on_press(LoginPageMessage::LoginPressed)
             .width(Length::Fixed(300.0));
-            //.style(iced::theme::Button::Custom(Box::new(LoginButtonStyle)));
 
         // Layout
         let col = Column::new()
