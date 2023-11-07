@@ -8,7 +8,9 @@ name = "stargazer"
 path = "src/main.rs"
 
 [dependencies]
-iced = {version = "0.10.0", features = ["image"] }
+futures = "0.3.29"
+iced = {version = "0.10.0", features = ["image", "tokio"] }
 reqwest = "0.11.22"
+secstr = "0.5.1"
 serde = "1.0.190"
 
