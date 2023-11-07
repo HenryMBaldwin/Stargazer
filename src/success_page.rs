@@ -1,6 +1,6 @@
 use iced::{
     Element,
-    Widget::{Container, Column, Text},
+    widget::{Container, Column, Text},
     Length
 };
 
@@ -14,15 +14,15 @@ impl SuccessPage {
     }
 
     pub fn view(&self) -> Element<AppMessage> {
-        let label = Text.new("Wow you successfully logged in thats very cool");
+        let label = Text::new("Wow you successfully logged in thats very cool");
 
         let col = Column::new().push(label);
 
-        Conatiner.new(col)
+        Container::new(col)
             .center_x()
             .center_y()
-            .width(Length::fill)
-            .height(Length::fill)
+            .width(Length::Fill)
+            .height(Length::Fill)
             .into()
     }
 }
