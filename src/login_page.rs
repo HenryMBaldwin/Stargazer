@@ -63,7 +63,7 @@ impl LoginPage {
                 let oapi = self.oapi.clone();
                 Command::perform(async move {oapi.login(&username, &password).await},
              |status| {
-                if status.is_ok() { 
+                if status.unwrap().is_success() { 
                     AppMessage::ChangeView(Views::SuccessPage)
                 }
                 else {
