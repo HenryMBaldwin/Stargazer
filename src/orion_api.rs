@@ -60,7 +60,7 @@ impl OrionAPI{
     }
 
     //gets auth token, attempts reauthentication if auth token is empty
-    pub async fn update_auth(&self)-> String{
+    async fn get_auth(&self)-> String{
         if self.auth_valid {
             self.auth_token.lock().await.clone()
         }
@@ -70,5 +70,9 @@ impl OrionAPI{
         }
 
 
+    }
+
+    async fn query() {
+        ()
     }
 }
