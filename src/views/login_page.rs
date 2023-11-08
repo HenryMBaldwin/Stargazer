@@ -6,12 +6,14 @@ use iced::alignment::{Alignment, Horizontal};
 use iced::{Color, Element, Length, theme, Command};
 
 //Styles
-use crate::{styles, AppMessage, orion_api, Views};
+use crate::{views::components::error_components::ErrorText, AppMessage, orion_api, Views};
 
-//use styles::LoginButtonStyle;
+
 
 //Orion API
 use orion_api::OrionAPI;
+
+use super::components::gold_button::GoldButton;
 
 pub struct LoginPage {
     oapi: Arc<OrionAPI>,
@@ -94,7 +96,7 @@ impl LoginPage {
             .height(Length::Fixed(200.0));
 
         //ErrorText ***THIS SHOULD BE RED***
-        let err_text: Text<'_, iced::Renderer> = Text::new(&self.error_text);
+        let err_text: Text<'_, iced::Renderer> = text(&self.error_text);//.style(iced::theme::Text::Color(Color::from_rgb(204.0, 2.0, 2.0)));
 
         // Input fields
         let username_input = text_input(
@@ -120,7 +122,8 @@ impl LoginPage {
         // Login button
         let login_button = Button::new( Text::new("Login").horizontal_alignment(Horizontal::Center))
             .on_press(LoginPageMessage::LoginPressed)
-            .width(Length::Fixed(300.0));
+            .width(Length::Fixed(300.0))
+            ;//.style(iced::theme::Button::Custom(Box::new(GoldButton)));
 
         // Layout
         let mut col = Column::new()
