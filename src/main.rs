@@ -16,16 +16,12 @@ use iced::{
 use std::sync::Arc;
 
 //modules
-//login page
-mod login_page;
-use login_page::{LoginPage, LoginPageMessage};
-
-
-//success page
-mod success_page;
-use success_page::SuccessPage;
-//styles
-mod styles;
+mod views;
+use views::{
+    login_page::{LoginPage, LoginPageMessage},
+    success_page::SuccessPage,
+    components
+};
 
 //Orion APi
 mod orion_api;
@@ -80,8 +76,6 @@ pub enum AppMessage {
     ChangeView(Views),
     //page messages
     LoginPageMessage(LoginPageMessage),
-    //other
-    LoginFailed,
     //..
 }
 
