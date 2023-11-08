@@ -1,14 +1,14 @@
 use std::sync::Arc;
 use reqwest::StatusCode;
 //iced
-use iced::widget::{button, image, text_input, Button, Text, Column, Container, Image, Row, TextInput};
+use iced::widget::{button, image, text, text_input, Button, Text, Column, Container, Image, Row, TextInput};
 use iced::alignment::{Alignment, Horizontal};
 use iced::{Color, Element, Length, theme, Command};
 
 //Styles
 use crate::{styles, AppMessage, orion_api, Views};
 
-use styles::LoginButtonStyle;
+//use styles::LoginButtonStyle;
 
 //Orion API
 use orion_api::OrionAPI;
@@ -19,6 +19,7 @@ pub struct LoginPage {
     password: String,
     password_id: text_input::Id,
     stargazer_image: image::Handle,
+    error_text: String,
 } 
 
 #[derive(Debug, Clone)]
@@ -29,6 +30,7 @@ pub enum LoginPageMessage{
     PasswordChanged(String),
     //Password submitted is the same as LoginPressed
     LoginPressed,
+    LoginFailed(StatusCode)
     
 }
 
@@ -42,7 +44,8 @@ impl LoginPage {
             username: String::new(),
             password: String::new(), 
             password_id: text_input::Id::unique(),
-            stargazer_image: image::Handle::from_path("assets/stargazer_black_vert_transparent.png")
+            stargazer_image: image::Handle::from_path("assets/stargazer_black_vert_transparent.png"),
+            error_text: String::new()
          }
     }
 
@@ -63,14 +66,23 @@ impl LoginPage {
                 let oapi = self.oapi.clone();
                 Command::perform(async move {oapi.login(&username, &password).await},
              |status| {
-                if status.unwrap().is_success() { 
+                    let code = status.unwrap();
+                if code.is_success() { 
                     AppMessage::ChangeView(Views::SuccessPage)
                 }
                 else {
-                    AppMessage::LoginFailed
+                    AppMessage::LoginPageMessage(LoginPageMessage::LoginFailed(code))
                 }
             })}
-                
+            LoginPageMessage::LoginFailed(status) => {
+                match status {
+                    StatusCode::UNAUTHORIZED => self.error_text = String::from("Error: Incorrect Username or Password."),
+                    StatusCode::BAD_GATEWAY => self.error_text = String::from("Error: Not connected to the Internet."),
+                    _ => self.error_text = String::from(format!("Error: Status Code {}", status.as_u16()))
+                }
+                Command::none()
+            }
+
         }
     }
 
@@ -80,6 +92,9 @@ impl LoginPage {
         let img = Image::new(self.stargazer_image.clone())
             .width(Length::Fixed(300.0))
             .height(Length::Fixed(200.0));
+
+        //ErrorText ***THIS SHOULD BE RED***
+        let err_text: Text<'_, iced::Renderer> = Text::new(&self.error_text);
 
         // Input fields
         let username_input = text_input(
@@ -108,14 +123,20 @@ impl LoginPage {
             .width(Length::Fixed(300.0));
 
         // Layout
-        let col = Column::new()
+        let mut col = Column::new()
             .align_items(Alignment::Center)
             .spacing(20)
-            .push(img)
-            .push(username_input)
-            .push(password_input)
-            .push(login_button);
-        
+            .push(img);
+
+// Conditionally push the error text if it's not empty.
+        if !self.error_text.is_empty() {
+            col = col.push(err_text);
+        }
+
+        // Continue building the column.
+        col = col.push(username_input)
+                .push(password_input)
+                .push(login_button);
 
 
         //placeholder for login screen
