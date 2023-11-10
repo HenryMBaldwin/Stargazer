@@ -1,23 +1,49 @@
+use std::sync::Arc;
+
 use iced::{
     Element,
-    widget::{Container, Column, Text},
-    Length
+    widget::{Container, Column, Text, button, text},
+    Length, Command, alignment::Horizontal
 };
+use crate::{AppMessage, orion_api};
 
-use crate::AppMessage;
+use orion_api::OrionAPI;
 
-pub struct SuccessPage;
+
+
+#[derive(Debug, Clone)]
+pub enum SuccessPageMessage {
+    //will use the success page to test functions of the Orion API after authed.
+    //This command will be a catch all to reuse upon testing different things
+    ExecCommand
+}
+pub struct SuccessPage {
+    oapi: Arc<OrionAPI>,
+}
 
 impl SuccessPage {
-    pub fn new() -> Self {
-        SuccessPage
+    pub fn new(oapi: Arc<OrionAPI>) -> Self {
+        Self {
+            oapi
+        }
     }
 
-    pub fn view(&self) -> Element<AppMessage> {
+    pub fn update(&mut self, message: SuccessPageMessage) -> Command<AppMessage> {
+        match message {
+            SuccessPageMessage::ExecCommand => Command::none()
+        }
+    }
+    pub fn view(&self) -> Element<SuccessPageMessage> {
         let label = Text::new("Wow you successfully logged in thats very cool");
 
-        let col = Column::new().push(label);
+        let button = button(text("Test").horizontal_alignment(Horizontal::Center))
+            .on_press(SuccessPageMessage::ExecCommand)
+            .width(Length::Fixed(300.0));
 
+        let col = Column::new()
+            .push(label)
+            .push(button);
+        
         Container::new(col)
             .center_x()
             .center_y()

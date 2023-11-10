@@ -19,7 +19,7 @@ use std::sync::Arc;
 mod views;
 use views::{
     login_page::{LoginPage, LoginPageMessage},
-    success_page::SuccessPage,
+    success_page::{SuccessPage, SuccessPageMessage},
     components
 };
 
@@ -76,6 +76,7 @@ pub enum AppMessage {
     ChangeView(Views),
     //page messages
     LoginPageMessage(LoginPageMessage),
+    SuccessPageMessage(SuccessPageMessage)
     //..
 }
 
@@ -101,7 +102,7 @@ impl Application for MainApp {
                 //init with login page visible
                 current_view: Views::LoginPage,
                 login_page: LoginPage::new(oapi.clone()), 
-                success_page: SuccessPage::new()
+                success_page: SuccessPage::new(oapi.clone())
             },
             Command::none()
         )
@@ -120,7 +121,10 @@ impl Application for MainApp {
             },
             AppMessage::LoginPageMessage(msg) => {
                 self.login_page.update(msg)
-            }
+            },
+            AppMessage::SuccessPageMessage(msg) => {
+                self.success_page.update(msg)
+            },
             _ => Command::none()
         }
     }
@@ -130,7 +134,7 @@ impl Application for MainApp {
         match self.current_view {
             //Views
             Views::LoginPage => self.login_page.view().map(move |message| AppMessage::LoginPageMessage(message)),
-            Views::SuccessPage => self.success_page.view()
+            Views::SuccessPage => self.success_page.view().map(move |message| AppMessage::SuccessPageMessage(message))
             //..
         }
     }
