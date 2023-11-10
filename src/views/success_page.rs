@@ -30,7 +30,15 @@ impl SuccessPage {
 
     pub fn update(&mut self, message: SuccessPageMessage) -> Command<AppMessage> {
         match message {
-            SuccessPageMessage::ExecCommand => Command::none()
+            SuccessPageMessage::ExecCommand => {
+                let oapi = self.oapi.clone();
+                Command::perform(async move {
+                    oapi.print_auth().await;
+                },
+                |_|{
+                    AppMessage::NoneMsg
+                })
+            }
         }
     }
     pub fn view(&self) -> Element<SuccessPageMessage> {

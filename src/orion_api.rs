@@ -94,7 +94,7 @@ impl OrionAPI{
         ()
     }
 
-    async fn print_auth(&self) {
+    pub async fn print_auth(&self) {
         println!("{}", self.auth_token.lock().await.to_string());
     }
 }

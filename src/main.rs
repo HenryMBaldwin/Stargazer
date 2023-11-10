@@ -74,9 +74,12 @@ pub struct MainApp{
 pub enum AppMessage {
     //Message to change between main views
     ChangeView(Views),
+    //None message for calling futures with no action up returning
+    NoneMsg,
     //page messages
     LoginPageMessage(LoginPageMessage),
     SuccessPageMessage(SuccessPageMessage)
+
     //..
 }
 
