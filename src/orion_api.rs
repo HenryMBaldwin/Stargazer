@@ -1,5 +1,5 @@
 use reqwest::{Client, Error, header, StatusCode};
-use serde::Deserialize;
+use serde_json::Value;
 use secstr::*;
 use futures::lock::Mutex;
 pub struct OrionAPI{
@@ -56,7 +56,25 @@ impl OrionAPI{
             .basic_auth(&self.username.lock().await.clone(), Some(String::from_utf8(self.password.lock().await.unsecure().to_vec()).unwrap())) 
             .send()
             .await?;
-        Ok(response.status())
+
+        let status = response.status();
+        if response.status().is_success() {
+
+            //parse response body as JSON
+            let json: Value = response.
+                json::<serde_json::Value>()
+                .await?;
+            if let Some(token) = json["access_token"].as_str() {
+                let mut auth_token = self.auth_token.lock().await;
+                *auth_token = token.to_string();
+            }
+            Ok(status)
+        }
+        else {
+            //TODO: Error handling
+            Ok(status)
+        }
+        
     }
 
     //gets auth token, attempts reauthentication if auth token is empty
@@ -74,5 +92,9 @@ impl OrionAPI{
 
     async fn query() {
         ()
+    }
+
+    async fn print_auth(&self) {
+        println!("{}", self.auth_token.lock().await.to_string());
     }
 }
