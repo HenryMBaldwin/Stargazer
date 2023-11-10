@@ -8,7 +8,7 @@ pub struct OrionAPI{
     //because this will be running in the background
     auth_token: Mutex<String>,
     //variable to hold whether the instance currently has a valid auth token
-    auth_valid: bool,
+    auth_valid: Mutex<bool>,
     //username
     username: Mutex<String>,
     //store password in memory
@@ -22,7 +22,7 @@ impl OrionAPI{
             //base API URL
             base_url: String::from("https://api.orionadvisor.com/api/v1/"),
             auth_token: Mutex::new(String::new()),
-            auth_valid: false,
+            auth_valid: Mutex::new(false),
             username: Mutex::new(String::new()),
             password: Mutex::new(SecStr::new("".into()))  
         }
@@ -67,6 +67,13 @@ impl OrionAPI{
             if let Some(token) = json["access_token"].as_str() {
                 let mut auth_token = self.auth_token.lock().await;
                 *auth_token = token.to_string();
+                //set auth token to valid
+                let mut valid = self.auth_valid.lock().await;
+                *valid = true;
+            }
+            else {
+                //TODO: Error Handling
+                ();
             }
             Ok(status)
         }
@@ -79,7 +86,7 @@ impl OrionAPI{
 
     //gets auth token, attempts reauthentication if auth token is empty
     async fn get_auth(&self)-> String{
-        if self.auth_valid {
+        if self.auth_valid.lock().await.clone() {
             self.auth_token.lock().await.clone()
         }
         else {
