@@ -84,7 +84,7 @@ impl OrionAPI{
         
     }
 
-    //gets auth token, attempts reauthentication if auth token is empty
+    //gets auth token, attempts reauthentication if auth token is empty or invalid
     async fn get_auth(&self)-> String{
         if self.auth_valid.lock().await.clone() {
             self.auth_token.lock().await.clone()

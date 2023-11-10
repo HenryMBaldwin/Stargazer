@@ -128,7 +128,7 @@ impl Application for MainApp {
             AppMessage::SuccessPageMessage(msg) => {
                 self.success_page.update(msg)
             },
-            _ => Command::none()
+            AppMessage::NoneMsg => Command::none()
         }
     }
 
