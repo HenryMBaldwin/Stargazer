@@ -4,8 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "stargazer"
-path = "src/main.rs"
+name = "stargazer-gui"
+path = "src/gui/main.rs"
+
+
+[[bin]]
+name = "stargazer-daemon"
+path = "src/daemon/main.rs"
 
 [dependencies]
 futures = "0.3.29"
