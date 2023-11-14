@@ -26,6 +26,9 @@ use views::{
 //Orion APi
 mod orion_api;
 use orion_api::OrionAPI;
+
+//orion pipe client
+mod pipe_client;
 //Consts
 const WINDOW_WIDTH: u32 = 910;
 const WINDOW_HEIGHT: u32 = 496;
