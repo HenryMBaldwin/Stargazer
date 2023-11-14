@@ -1,4 +1,4 @@
-use reqwest::{Client, Error, header, StatusCode};
+use reqwest::{Client, Error, header, StatusCode, Response};
 use serde_json::Value;
 use secstr::*;
 use futures::lock::Mutex;
@@ -97,8 +97,36 @@ impl OrionAPI{
 
     }
 
-    async fn query() {
-        ()
+    pub async fn query(&self, ID: String) -> Result<(), Error>{
+
+        println!("Heres some proof we even entered this function");
+        let client = Client::new();
+
+        let query_url = format!("{}Reporting/Custom/{}",self.base_url, ID);
+        let auth_header = {
+            let token = self.auth_token.lock().await;
+
+            let header = format!("Session {}", *token);
+            header
+        };
+
+        let response = client
+            .get(query_url)
+            .header("Authorization", auth_header)
+            .send()
+            .await;
+
+        match response {
+            Ok(resp) => {
+                println!("{}",resp.status());
+                Ok(())
+            },
+            Err(e) => {
+                println!("{}", e);
+                Err(e)
+            }
+        }
+        
     }
 
     pub async fn print_auth(&self) {
