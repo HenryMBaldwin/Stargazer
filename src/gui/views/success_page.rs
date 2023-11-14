@@ -33,7 +33,7 @@ impl SuccessPage {
             SuccessPageMessage::ExecCommand => {
                 let oapi = self.oapi.clone();
                 Command::perform(async move {
-                    oapi.print_auth().await;
+                    oapi.query(String::from("13737")).await;
                 },
                 |_|{
                     AppMessage::NoneMsg
