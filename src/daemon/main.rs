@@ -1,7 +1,8 @@
-
 //orion api
 mod orion_api;
-mod reqres;
+
+//shared pipe lib crate
+use stargazer::libpipe::reqres;
 
 
 #[cfg(windows)]
@@ -25,6 +26,7 @@ mod stargazer_service {
         time::Duration,
     };
     use named_pipe::{PipeOptions, PipeClient, PipeServer, ConnectingServer};
+    use stargazer::libpipe::consts;
     use tokio::sync::{Notify, watch};
     use windows_service::{
         define_windows_service,
@@ -43,7 +45,7 @@ mod stargazer_service {
 
     const SERVICE_NAME: &str = "stargazer_service";
     const SERVICE_TYPE: ServiceType = ServiceType::OWN_PROCESS;
-    const PIPE_NAME: &str = r"\\.\pipe\stargazer_pipe";
+    
 
     pub fn run() -> Result<()> {
         service_dispatcher::start(SERVICE_NAME, ffi_service_main)
@@ -61,7 +63,7 @@ mod stargazer_service {
         let (shutdown_tx, shutdown_rx) = mpsc::channel();
         
         let orion_api = Arc::new(OrionAPI::new());
-        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
         
         let (shutdown_signal, mut recv) = watch::channel(false);
         let event_handler = move |control_event| -> ServiceControlHandlerResult {
@@ -94,7 +96,7 @@ mod stargazer_service {
             
             loop {
                 
-                let server = PipeOptions::new(PIPE_NAME)
+                let server = PipeOptions::new(consts::PIPE_NAME)
                 .single().unwrap(); //TODO: Handle Errors
                 //blocks listening for an incoming connections
                 let mut pipe_server = server.wait().unwrap();
@@ -111,7 +113,7 @@ mod stargazer_service {
                     let response = handle_request(&request, orion_api_clone).await;
 
                     // Write response back to client
-                    pipe_server.write(&buffer)
+                    pipe_server.write(&response.as_bytes())
                 });
         
                 // Check for shutdown signal
@@ -150,9 +152,9 @@ mod stargazer_service {
                 let result = orion_api.login(login_request.username.as_str(), login_request.password.as_str()).await;
                 match result {
                     Ok(status) =>  {
-                        let resp = LoginResponse {
-                            response: status.as_u16()
-                        };
+                        let resp = ResponseType::Login(LoginResponse {
+                            status: status.as_u16()
+                        });
                         serde_json::to_string(&resp).unwrap()
                     }
                     Err(e) => {
