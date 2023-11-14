@@ -24,6 +24,7 @@ mod stargazer_service {
         thread,
         time::Duration,
     };
+    use named_pipe::{PipeOptions, PipeClient, PipeServer, ConnectingServer};
     use tokio::sync::{Notify, watch};
     use windows_service::{
         define_windows_service,
@@ -42,7 +43,7 @@ mod stargazer_service {
 
     const SERVICE_NAME: &str = "stargazer_service";
     const SERVICE_TYPE: ServiceType = ServiceType::OWN_PROCESS;
-    const PIPE_NAME: &str = r"\\.\pipe\stargazer_pip";
+    const PIPE_NAME: &str = r"\\.\pipe\stargazer_pipe";
 
     pub fn run() -> Result<()> {
         service_dispatcher::start(SERVICE_NAME, ffi_service_main)
@@ -58,7 +59,10 @@ mod stargazer_service {
 
     pub fn run_service() -> Result<()> {
         let (shutdown_tx, shutdown_rx) = mpsc::channel();
+        
+        let orion_api = Arc::new(OrionAPI::new());
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        
         let (shutdown_signal, mut recv) = watch::channel(false);
         let event_handler = move |control_event| -> ServiceControlHandlerResult {
             match control_event {
@@ -85,34 +89,33 @@ mod stargazer_service {
 
         //Named pipe logic in a different thread
         runtime.spawn(async move {
-            let orion_api = Arc::new(OrionAPI::new());
-            let mut pipe = File::create(PIPE_NAME).expect("Error: Failed to create named pipe.");
+            
+            
             
             loop {
                 
-                let mut buffer = [0; 1024];
-                let pipe_clone = pipe.clone();
-                match pipe_clone.read(&mut buffer) {
-                    Ok(bytes_read) if bytes_read > 0 => {
-                        let message = String::from_utf8_lossy(&buffer[..bytes_read]).to_string();
-                        let orion_api_clone = orion_api.clone();
-        
-                        tokio::spawn(async move {
-                            let response = handle_request(&message, &orion_api_clone).await;
-                            // Write response back to the pipe safely
-                        });
-                    }
-                    Err(e) => {
-                        //TODO: Handle Errors
-                        ();
-                    }
-                    Ok(_) => {
-                        //TODO: Figure out why I need this branch
-                    }
-                    
-                }
+                let server = PipeOptions::new(PIPE_NAME)
+                .single().unwrap(); //TODO: Handle Errors
+                //blocks listening for an incoming connections
+                let mut pipe_server = server.wait().unwrap();
+                let orion_api_clone = orion_api.clone();
+
+                tokio::spawn(async move {
+                    let mut buffer = vec![0; 1024];
+
+                    // Read request from client
+                    let bytes_read = pipe_server.read(&mut buffer).unwrap();
+                    let request = String::from_utf8_lossy(&buffer[..bytes_read]).to_string();
+
+                    // Process request and prepare response
+                    let response = handle_request(&request, orion_api_clone).await;
+
+                    // Write response back to client
+                    pipe_server.write(&buffer)
+                });
         
                 // Check for shutdown signal
+                //TODO: fix this such that this isn't blocked while waiting for a client
                 if *recv.borrow() {
                     break;
                 }
@@ -140,15 +143,28 @@ mod stargazer_service {
         Ok(())
     }
 
-    async fn handle_request(request: &str, orion_api: &OrionAPI) -> String {
+    async fn handle_request(request: &str, orion_api: Arc<OrionAPI>) -> String{
         //Handle request to Orion API
         match serde_json::from_str::<RequestType>(request) {
             Ok(RequestType::Login(login_request)) => {
-                String::new()
+                let result = orion_api.login(login_request.username.as_str(), login_request.password.as_str()).await;
+                match result {
+                    Ok(status) =>  {
+                        let resp = LoginResponse {
+                            response: status.as_u16()
+                        };
+                        serde_json::to_string(&resp).unwrap()
+                    }
+                    Err(e) => {
+                        //TODO: Handle Errors
+                        String::from(format!("Error: {}", e))
+                    }
+                }
             }
+            //other request types
             Err(e) =>   {
                 //TODO Handle Error
-                String::new()
+                String::from(format!("Error: {}",e))
             }
            }
 
