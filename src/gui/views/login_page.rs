@@ -1,3 +1,4 @@
+use std::io::{Write, Read};
 use std::sync::Arc;
 use reqwest::StatusCode;
 //iced
@@ -5,6 +6,12 @@ use iced::widget::{button, image, text, text_input, Button, Text, Column, Contai
 use iced::alignment::{Alignment, Horizontal};
 use iced::{Color, Element, Length, theme, Command};
 
+use stargazer::libpipe::reqres::{LoginRequest, RequestType};
+//shared pipe lib
+use stargazer::libpipe::{reqres,consts};
+
+//named pipes
+use crate::pipe_client;
 //Styles
 use crate::{views::components::error_components::ErrorText, AppMessage, orion_api, Views};
 
@@ -65,17 +72,27 @@ impl LoginPage {
             LoginPageMessage::LoginPressed => {
                 let username = self.username.clone();
                 let password = self.password.clone();
-                let oapi = self.oapi.clone();
-                Command::perform(async move {oapi.login(&username, &password).await},
-             |status| {
-                    let code = status.unwrap();
-                if code.is_success() { 
-                    AppMessage::ChangeView(Views::SuccessPage)
-                }
-                else {
-                    AppMessage::LoginPageMessage(LoginPageMessage::LoginFailed(code))
-                }
-            })}
+            //     let oapi = self.oapi.clone();
+            //     Command::perform(async move {oapi.login(&username, &password).await},
+            //  |status| {
+            //         let code = status.unwrap();
+            //     if code.is_success() { 
+            //         AppMessage::ChangeView(Views::SuccessPage)
+            //     }
+            //     else {
+            //         AppMessage::LoginPageMessage(LoginPageMessage::LoginFailed(code))
+            //     }
+            //     })
+            Command::perform(async move {pipe_client::login(&username, &password).await},
+                |status| {
+                    if status.is_success(){
+                        AppMessage::ChangeView(Views::SuccessPage)
+                    }
+                    else{
+                        AppMessage::LoginPageMessage(LoginPageMessage::LoginFailed(status))
+                    }
+                })
+            }
             LoginPageMessage::LoginFailed(status) => {
                 match status {
                     StatusCode::UNAUTHORIZED => self.error_text = String::from("Error: Incorrect Username or Password."),
