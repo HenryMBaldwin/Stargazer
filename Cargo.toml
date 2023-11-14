@@ -7,7 +7,6 @@ edition = "2021"
 name = "stargazer-gui"
 path = "src/gui/main.rs"
 
-
 [[bin]]
 name = "stargazer-daemon"
 path = "src/daemon/main.rs"
@@ -22,4 +21,5 @@ serde = {version = "1.0.190", features = ["serde_derive"]}
 serde_json = "1.0.108"
 tokio = {version = "1", features = ["full"]}
 windows-service = "0.6.0"
+
 
