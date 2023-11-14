@@ -1,4 +1,5 @@
 use serde;
+use serde::{Serialize, Deserialize};
 use reqwest::StatusCode;
 
 
@@ -17,13 +18,13 @@ use reqwest::StatusCode;
 
 
 //types
-#[derive(serde::Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum RequestType {
     Login(LoginRequest),
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum ResponseType {
     Login(LoginResponse),
@@ -37,17 +38,16 @@ pub enum ResponseType {
 
 
 //login()
-#[derive(serde::Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct LoginRequest{
-    username: String,
-    password: String,
+    pub username: String,
+    pub password: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct LoginResponse{
-    //where u16 is a status code, should always be checked
-    //where String is an error
-    response: Result<u16, String>
+    //where u16 is a status code
+    pub response: u16
 }
 
 //query
