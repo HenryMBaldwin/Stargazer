@@ -1,4 +1,3 @@
-//See Commit For Note
 //orion api
 mod orion_api;
 
@@ -72,7 +71,7 @@ pub fn main() -> Result<()> {
         //     break;
         // }
         //necassary to similate the pipe logic happening on a different thread
-        ();
+        thread::sleep(Duration::MAX);
     }
 
     Ok(())
