@@ -55,7 +55,7 @@ mod stargazer_service {
 
     pub fn my_service_main(_arguments: Vec<OsString>) {
         if let Err(_e) = run_service() {
-            // Handle the error, by logging or something.
+            // TODO: Handle the error, by logging or something.
         }
     }
 

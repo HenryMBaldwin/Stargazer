@@ -21,9 +21,9 @@ pub async fn login(username: &str, password: &str) -> StatusCode {
         username: String::from(username),
         password: String::from(password)
     })).expect("Error: error serializing json.");
-    let response = serde_json::from_str::<ResponseType>(&send_wait(&request).await).expect("Error deserializing json");
+    let response = serde_json::from_str::<ResponseType>(&send_wait(&request).await).expect("Error deserializing json.");
     match response {
-        ResponseType::Login(login) => StatusCode::from_u16(login.status).expect("Error, invalid status code"),
+        ResponseType::Login(login) => StatusCode::from_u16(login.status).expect("Error, invalid status code."),
         _ => {
             //TODO: Handle errors
             StatusCode::UNAUTHORIZED
@@ -34,9 +34,9 @@ pub async fn login(username: &str, password: &str) -> StatusCode {
 
 // writes request to named pipe and waits for reponse
 async fn send_wait(request: &str) -> String {
-    let mut client = PipeClient::connect(consts::PIPE_NAME).expect("Error: Error creating pipe client with given name");
-    client.write(request.as_bytes());
+    let mut client = PipeClient::connect(consts::PIPE_NAME).expect("Error: Error creating pipe client with given name.");
+    client.write(request.as_bytes()).expect("Error: client failed to write to pipe.");
     let mut response = vec![0; 1024];
-    client.read(&mut response);
-    String::from_utf8(response).expect("Error converting response to string")
+    let size = client.read(&mut response).expect("Error: client failed to read from pipe.");
+    String::from_utf8(response[..size].to_vec()).expect("Error converting response to string.")
 }
