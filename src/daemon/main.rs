@@ -28,7 +28,7 @@ mod stargazer_service {
     use named_pipe::{PipeOptions, PipeClient, PipeServer, ConnectingServer};
     use stargazer::libpipe::consts;
     use tokio::sync::{Notify, watch};
-    use windows_service::{
+    use windows_service::{ 
         define_windows_service,
         service::{
             ServiceControl, ServiceControlAccept, ServiceExitCode, ServiceState, ServiceStatus,
