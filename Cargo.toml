@@ -11,6 +11,14 @@ path = "src/gui/main.rs"
 name = "stargazer-daemon"
 path = "src/daemon/main.rs"
 
+[[bin]]
+name = "install-daemon"
+path = "src/daemon/install_daemon.rs"
+
+[[bin]]
+name = "uninstall-daemon"
+path = "src/daemon/uninstall_daemon.rs"
+
 [dependencies]
 futures = "0.3.29"
 iced = {version = "0.10.0", features = ["image", "tokio"] }
@@ -21,5 +29,6 @@ serde = {version = "1.0.190", features = ["serde_derive"]}
 serde_json = "1.0.108"
 tokio = {version = "1", features = ["full"]}
 windows-service = "0.6.0"
+windows-sys = "0.48.0"
 
 
