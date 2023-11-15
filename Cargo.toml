@@ -12,6 +12,10 @@ name = "stargazer-daemon"
 path = "src/daemon/main.rs"
 
 [[bin]]
+name = "daemon-interactive"
+path = "src/daemon/interactive.rs"
+
+[[bin]]
 name = "install-daemon"
 path = "src/daemon/install_daemon.rs"
 
@@ -22,6 +26,8 @@ path = "src/daemon/uninstall_daemon.rs"
 [dependencies]
 futures = "0.3.29"
 iced = {version = "0.10.0", features = ["image", "tokio"] }
+log = "0.4.20"
+log4rs = "1.2.0"
 named_pipe = "0.4.1"
 reqwest = {version = "0.11.22", features = ["json"]}
 secstr = "0.5.1"
