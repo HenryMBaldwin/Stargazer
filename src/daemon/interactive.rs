@@ -1,20 +1,24 @@
 //orion api
 mod orion_api;
 
+use futures::{AsyncReadExt, AsyncWriteExt};
 use orion_api::OrionAPI;
 //shared pipe lib crate
 use stargazer::libpipe::reqres::{self, RequestType, ResponseType, LoginResponse};
 
+//interprocess
+use interprocess::os::windows::named_pipe::{self, tokio::PipeListenerOptionsExt, PipeStream, PipeListener, DuplexMsgPipeStream};
+
 //imports from main.rs, likely most will go unused as all windows service stuff has been stripped out
 use std::{
-    ffi::OsString,
+    ffi::OsStr,
     io::{Read, Write},
     fs::File,
     sync::{mpsc, Arc},
     thread,
-    time::Duration,
+    time::Duration, borrow::Cow,
 };
-use named_pipe::{PipeOptions, PipeClient, PipeServer, ConnectingServer};
+//use named_pipe::{PipeOptions, PipeClient, PipeServer, ConnectingServer};
 use stargazer::libpipe::consts;
 use tokio::sync::{Notify, watch};
 use windows_service::{ 
@@ -27,57 +31,46 @@ use windows_service::{
     service_dispatcher, Result,
 };
 //This serves as an interactive way to run the windows service logic without actually running the windows service, which cannot log and seems to be very hard to effectively debug at rutime.
-pub fn main() -> Result<()> {
+#[tokio::main]
+pub async fn main() -> Result<()> {
     
     let orion_api = Arc::new(OrionAPI::new());
-    let runtime = tokio::runtime::Runtime::new().unwrap();
     
+        
+        //create PipeListener
+        let listener: named_pipe::tokio::PipeListener<_> = named_pipe::PipeListenerOptions::new()
+            .name(Cow::from(OsStr::new(consts::PIPE_NAME_SERVER)))
+            .mode(named_pipe::PipeMode::Bytes)
+            .create_tokio::<named_pipe::tokio::DuplexBytePipeStream>().expect("Error creating pipe");
 
-
-    //Named pipe logic in a different thread
-    runtime.spawn(async move {
-        
-        
-        
         loop {
             
-            let server = PipeOptions::new(consts::PIPE_NAME)
-            .single().unwrap(); //TODO: Handle Errors
-            //blocks listening for an incoming connections
-            let mut pipe_server = server.wait().unwrap();
-            let orion_api_clone = orion_api.clone();
+            
+           
+             let orion_api_clone = orion_api.clone();
 
+            //blocks until connection is made
+            let connection = listener.accept().await.expect("Error accepting connection");
+ 
             tokio::spawn(async move {
+                let (mut reader, mut writer) = connection.split();
                 let mut buffer = vec![0; 1024];
+                let read = reader.read(&mut buffer).await.expect("Error couldn't read string");
+                let response = handle_request(&String::from_utf8_lossy(&buffer[..read]).to_string(), orion_api_clone).await;
 
-                // Read request from client
-                let bytes_read = pipe_server.read(&mut buffer).unwrap();
-                let request = String::from_utf8_lossy(&buffer[..bytes_read]).to_string();
-
-                // Process request and prepare response
-                let response = handle_request(&request, orion_api_clone).await;
-
-                // Write response back to client
-                pipe_server.write(&response.as_bytes())
+                writer.write_all(response.as_bytes()).await.expect("Error Writing");
+                writer.close().await.expect("Error closing the writer!");
+                drop((reader, writer))
             });
     
         }
-    });
-
-    
-    loop {
-        // if shutdown_rx.recv_timeout(Duration::from_secs(1)).is_ok() {
-        //     let _ = shutdown_signal.send(true);
-        //     break;
-        // }
-        //necassary to similate the pipe logic happening on a different thread
-        thread::sleep(Duration::MAX);
-    }
-
-    Ok(())
 }
 
+
+ 
+
 async fn handle_request(request: &str, orion_api: Arc<OrionAPI>) -> String{
+    println!("Handling request: {}", request);
     //Handle request to Orion API
     match serde_json::from_str::<RequestType>(request) {
         Ok(RequestType::Login(login_request)) => {
