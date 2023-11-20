@@ -26,6 +26,7 @@ path = "src/daemon/uninstall_daemon.rs"
 [dependencies]
 futures = "0.3.29"
 iced = {version = "0.10.0", features = ["image", "tokio"] }
+interprocess = {version = "1.2.1", features = ["tokio_support"]}
 log = "0.4.20"
 log4rs = "1.2.0"
 named_pipe = "0.4.1"
