@@ -4,35 +4,23 @@ mod orion_api;
 use futures::{AsyncReadExt, AsyncWriteExt};
 use orion_api::OrionAPI;
 //shared pipe lib crate
-use stargazer::libpipe::reqres::{self, RequestType, ResponseType, LoginResponse};
+use stargazer::libpipe::{
+    consts,
+    reqres::{RequestType, ResponseType, LoginResponse}
+};
 
 //interprocess
-use interprocess::os::windows::named_pipe::{self, tokio::PipeListenerOptionsExt, PipeStream, PipeListener, DuplexMsgPipeStream};
+use interprocess::os::windows::named_pipe::{self, tokio::PipeListenerOptionsExt};
 
-//imports from main.rs, likely most will go unused as all windows service stuff has been stripped out
 use std::{
     ffi::OsStr,
-    io::{Read, Write},
-    fs::File,
-    sync::{mpsc, Arc},
-    thread,
-    time::Duration, borrow::Cow,
+    sync::{Arc},
+    borrow::Cow,
 };
-//use named_pipe::{PipeOptions, PipeClient, PipeServer, ConnectingServer};
-use stargazer::libpipe::consts;
-use tokio::sync::{Notify, watch};
-use windows_service::{ 
-    define_windows_service,
-    service::{
-        ServiceControl, ServiceControlAccept, ServiceExitCode, ServiceState, ServiceStatus,
-        ServiceType,
-    },
-    service_control_handler::{self, ServiceControlHandlerResult},
-    service_dispatcher, Result,
-};
-//This serves as an interactive way to run the windows service logic without actually running the windows service, which cannot log and seems to be very hard to effectively debug at rutime.
+
+
 #[tokio::main]
-pub async fn main() -> Result<()> {
+pub async fn main() {
     
     let orion_api = Arc::new(OrionAPI::new());
     
@@ -49,9 +37,10 @@ pub async fn main() -> Result<()> {
            
              let orion_api_clone = orion_api.clone();
 
+            
             //blocks until connection is made
             let connection = listener.accept().await.expect("Error accepting connection");
- 
+            println!("Connection accepted");
             tokio::spawn(async move {
                 let (mut reader, mut writer) = connection.split();
                 let mut buffer = vec![0; 1024];
