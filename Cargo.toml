@@ -4,16 +4,16 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "stargazer-gui"
-path = "src/gui/main.rs"
+name = "gui"
+path = "src/gui/gui.rs"
 
 [[bin]]
 name = "stargazer-daemon"
 path = "src/daemon/main.rs"
 
 [[bin]]
-name = "daemon-interactive"
-path = "src/daemon/interactive.rs"
+name = "server"
+path = "src/server/server.rs"
 
 [[bin]]
 name = "install-daemon"
