@@ -24,63 +24,44 @@ use std::{
     net::SocketAddr
 };
 
-//hyper
-use hyper::{
-    body::{self, Bytes, Body},
-    server::conn::http1,
-    service::service_fn,
-    Request,
-    Response,
-};
-
-use hyper_util::rt::TokioIo;
+use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use serde::Deserialize;
 
 #[tokio::main]
 pub async fn main() {
     
     let orion_api = Arc::new(OrionAPI::new());
     
-        
+    tokio::join!(http_server(orion_api.clone()),pipe_server(orion_api.clone()));
         
 }
 
 
 //http server
-async fn http_server(orion_api: Arc<OrionAPI>) {
-    let addr = SocketAddr::from(([127,0,0,1],4200));
-    let listener = TcpListener::bind(addr).await.expect("Error creating listener");
-
-    //as anon function to capture orion_api
-    let service = service_fn(move |request: Request<body::Incoming>| {
-        let orion_api_clone = orion_api.clone();
-        async move {
-            // Extract the body as a string
-            let whole_body = hyper::body::to_bytes(request.into_body()).await.expect("Failed to read body");
-            let request_str = String::from_utf8(whole_body.to_vec()).expect("Body is not a valid UTF-8 string");
-    
-            // Call your handler function
-            let response_body = handle_request(&request_str, orion_api_clone).await;
-    
-            // Create and send the response
-            Ok::<_, Infallible>(Response::new(Full::<Bytes>::from(response_body)))
-        }
-    });
-
-    loop {
-        let (stream, _) = listener.accept().await.expect("Error accepting connection.");
-
-        let io = TokioIo::new(stream);
-
-        tokio::task::spawn(async move {
-            if let Err(err) = http1::Builder::new()
-                .serve_connection(io, service_fn(handle_http))
-                .await
-            {
-                println!("Error serving the connection: {}", err);
-            }
-        });
+async fn http_server(orion_api: Arc<OrionAPI>)  {
+    // Define a struct for incoming JSON requests
+    #[derive(Deserialize)]
+    struct JsonBody {
+        request: String,
     }
+
+    // Handler function for the web service
+    async fn process_request(json_body: web::Json<JsonBody>, orion_api: web::Data<Arc<OrionAPI>>) -> impl Responder {
+        let response = handle_request(&json_body.request, orion_api.get_ref().clone()).await;
+        HttpResponse::Ok().content_type("application/json").body(response)
+    }
+
+    // Start the HTTP server
+    let _ = HttpServer::new(move || {
+        App::new()
+            .app_data(web::Data::new(orion_api.clone()))
+            .route("/process", web::post().to(process_request))
+    })
+    .bind("127.0.0.1:4200").expect("error binding.")
+    .run()
+    .await;
 }
+
 //pipe server
 async fn pipe_server(orion_api: Arc<OrionAPI>) {
     //create PipeListener
