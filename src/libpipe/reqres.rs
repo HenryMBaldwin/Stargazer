@@ -49,4 +49,3 @@ pub struct LoginResponse{
     pub status: u16
 }
 
-//query
