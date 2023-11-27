@@ -41,5 +41,7 @@ windows-service = "0.6.0"
 windows-sys = "0.48.0"
 actix-web = "4.4.0"
 actix-cors = "0.6.4"
+thiserror = "1.0.50"
+anyhow = "1.0.75"
 
 
