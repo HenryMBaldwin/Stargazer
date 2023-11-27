@@ -24,7 +24,8 @@ use std::{
     net::SocketAddr
 };
 
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_cors::Cors;
+use actix_web::{web, App, HttpResponse, HttpServer, Responder, http};
 use serde::Deserialize;
 
 #[tokio::main]
@@ -39,21 +40,27 @@ pub async fn main() {
 
 //http server
 async fn http_server(orion_api: Arc<OrionAPI>)  {
-    // Define a struct for incoming JSON requests
-    #[derive(Deserialize)]
-    struct JsonBody {
-        request: String,
-    }
+   
 
     // Handler function for the web service
-    async fn process_request(json_body: web::Json<JsonBody>, orion_api: web::Data<Arc<OrionAPI>>) -> impl Responder {
-        let response = handle_request(&json_body.request, orion_api.get_ref().clone()).await;
+    async fn process_request(body: web::Bytes, orion_api: web::Data<Arc<OrionAPI>>) -> impl Responder {
+        let request = String::from_utf8(body.to_vec()).unwrap();
+        let response = handle_request(&request, orion_api.get_ref().clone()).await;
         HttpResponse::Ok().content_type("application/json").body(response)
     }
 
+    println!("Starting up web server");
     // Start the HTTP server
     let _ = HttpServer::new(move || {
         App::new()
+        .wrap(
+            Cors::default()
+                .allowed_origin("https://localhost:3000")
+                .allowed_methods(vec!["GET", "POST", "OPTIONS"])
+                .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
+                .allowed_header(http::header::CONTENT_TYPE)
+                .max_age(3600)
+        )
             .app_data(web::Data::new(orion_api.clone()))
             .route("/process", web::post().to(process_request))
     })
