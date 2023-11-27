@@ -1,6 +1,7 @@
 //orion api
 mod orion_api;
 
+use reqwest::StatusCode;
 //tokio
 use tokio::net::TcpListener;
 
@@ -12,7 +13,7 @@ use stargazer::libpipe::{
     consts,
     reqres::{RequestType, ResponseType, LoginResponse}
 };
-
+use stargazer::liberror::orion_api_err::*;
 //interprocess
 use interprocess::os::windows::named_pipe::{self, tokio::PipeListenerOptionsExt};
 
@@ -115,8 +116,12 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>) -> String{
                     serde_json::to_string(&resp).unwrap()
                 }
                 Err(e) => {
+                    //String must be a JSON string so extract error code
                     //TODO: Handle Errors
-                    String::from(format!("Error: {}", e))
+                    let resp = ResponseType::Login(LoginResponse {
+                        status: StatusCode::UNAUTHORIZED.as_u16()
+                    });
+                    serde_json::to_string(&resp).unwrap()
                 }
             }
         }

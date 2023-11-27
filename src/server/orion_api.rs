@@ -1,8 +1,10 @@
-use reqwest::{Client, Error, header, StatusCode, Response};
+use reqwest::{Client, header, StatusCode, Response};
+//use anyhow::{Result, Error, anyhow};
 use serde_json::Value;
 use secstr::*;
 use futures::lock::Mutex;
-
+use stargazer::liberror::orion_api_err::*;
+use anyhow::{Result,Error};
 pub struct OrionAPI{
     //base API URL
     base_url: String,
@@ -30,7 +32,7 @@ impl OrionAPI{
     }
 
     //sets username and password then attempts to authenticate
-    pub async fn login(&self, username: &str, password: &str) -> Result<StatusCode, Error>{
+    pub async fn login(&self, username: &str, password: &str) -> Result<StatusCode>{
 
         
         {
@@ -45,7 +47,7 @@ impl OrionAPI{
     }
 
     //attempts to authenticate with Orion using saved username and password
-    async fn authenticate(&self) -> Result<StatusCode, Error> {
+    async fn authenticate(&self) -> Result<StatusCode> {
         
         //combine the 
         //url 
@@ -54,7 +56,7 @@ impl OrionAPI{
         let auth_client = Client::new();
         let response = auth_client
             .get(auth_url)
-            .basic_auth(&self.username.lock().await.clone(), Some(String::from_utf8(self.password.lock().await.unsecure().to_vec()).unwrap())) 
+            .basic_auth(&self.username.lock().await.clone(), Some(String::from_utf8(self.password.lock().await.unsecure().to_vec())?)) 
             .send()
             .await?;
 
@@ -73,38 +75,52 @@ impl OrionAPI{
                 *valid = true;
             }
             else {
-                //TODO: Error Handling
-                ();
+                return Err(AuthError::Unknown(format!("Incorrect json response from Orion: {}", json.to_string())).into());
             }
             Ok(status)
         }
         else {
-            //TODO: Error handling
-            Ok(status)
+            //if authentication was not successful return autherror with status code
+            //TODO: implement more granular errors for different statuses
+            return Err(AuthError::InavalidLogin(status).into())
         }
         
     }
 
     //gets auth token, attempts reauthentication if auth token is empty or invalid
-    async fn get_auth(&self)-> String{
+    async fn get_auth(&self)-> Result<String>{
+        //if auth token is valid then return auth token
         if self.auth_valid.lock().await.clone() {
-            self.auth_token.lock().await.clone()
+            Ok(self.auth_token.lock().await.clone())
         }
         else {
-            
-            String::new()
+            //attempt to auth using saved credentials
+            //check if credentials aren't empty 
+            if !(self.username.lock().await.clone().is_empty()) {
+                if !(self.password.lock().await.unsecure().is_empty()){
+                    //attempt to reauth with saved user and pass
+                    match self.authenticate().await {
+                        Ok(_) => Ok(self.auth_token.lock().await.clone()),
+                        Err(e) => Err(e)
+                    }
+                }
+                else {
+                    Err(AuthError::EmptyPassword.into())
+                }
+            }
+            else {
+                Err(AuthError::EmptyUsername.into())
+            }
         }
-
-
     }
 
     //TODO make this actually functional for all queries
-    pub async fn query(&self, ID: String) -> Result<(), Error>{
+    pub async fn query(&self, id: String) -> Result<()>{
 
-        println!("Heres some proof we even entered this function");
+        println!("Starting Query {}", id);
         let client = Client::new();
 
-        let query_url = format!("{}Reporting/Custom/{}",self.base_url, ID);
+        let query_url = format!("{}Reporting/Custom/{}",self.base_url, id);
         let auth_header = {
             let token = self.auth_token.lock().await;
 
@@ -125,7 +141,7 @@ impl OrionAPI{
             },
             Err(e) => {
                 println!("{}", e);
-                Err(e)
+                Err(e.into())
             }
         }
         
