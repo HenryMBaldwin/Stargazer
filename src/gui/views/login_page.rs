@@ -71,17 +71,7 @@ impl LoginPage {
             LoginPageMessage::LoginPressed => {
                 let username = self.username.clone();
                 let password = self.password.clone();
-            //     let oapi = self.oapi.clone();
-            //     Command::perform(async move {oapi.login(&username, &password).await},
-            //  |status| {
-            //         let code = status.unwrap();
-            //     if code.is_success() { 
-            //         AppMessage::ChangeView(Views::SuccessPage)
-            //     }
-            //     else {
-            //         AppMessage::LoginPageMessage(LoginPageMessage::LoginFailed(code))
-            //     }
-            //     })
+                
             Command::perform(async move {pipe_client::login(&username, &password).await},
                 |status| {
                     if status.is_success(){
