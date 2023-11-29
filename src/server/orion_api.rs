@@ -5,6 +5,7 @@ use secstr::*;
 use futures::lock::Mutex;
 use stargazer::liberror::orion_api_err::*;
 use anyhow::{Result,Error};
+use json_types::Prompt;
 pub struct OrionAPI{
     //base API URL
     base_url: String,
@@ -114,40 +115,86 @@ impl OrionAPI{
         }
     }
 
-    //TODO make this actually functional for all queries
-    pub async fn query(&self, id: String) -> Result<()>{
-
-        println!("Starting Query {}", id);
+    //returns the prompt item of an object as a json string
+    pub async fn get_query_prompts(&self, id: String) -> Result<String> {
         let client = Client::new();
-
         let query_url = format!("{}Reporting/Custom/{}",self.base_url, id);
         let auth_header = {
-            let token = self.auth_token.lock().await;
+            let token = self.get_auth().await?;
 
-            let header = format!("Session {}", *token);
+            let header = format!("Session {}", token);
             header
         };
 
         let response = client
-            .get(query_url)
+            .get(&query_url)
             .header("Authorization", auth_header)
             .send()
-            .await;
-
-        match response {
-            Ok(resp) => {
-                println!("{}",resp.status());
-                Ok(())
-            },
-            Err(e) => {
-                println!("{}", e);
-                Err(e.into())
-            }
-        }
-        
+            .await?;
+        let json_string = response.text().await?;
+        let mut body: Value = serde_json::from_str(&json_string)?;
     }
 
-    pub async fn print_auth(&self) {
-        println!("{}", self.auth_token.lock().await.to_string());
+    //TODO make this actually functional for all queries
+    //generic query that returns JSON string of result or error
+    pub async fn query(&self, id: String, args: &[&str]) -> Result<String>{
+
+        println!("Starting Query {}", id);
+        let client = Client::new();
+        let query_url = format!("{}Reporting/Custom/{}",self.base_url, id);
+        let auth_header = {
+            let token = self.get_auth().await?;
+
+            let header = format!("Session {}", token);
+            header
+        };
+
+        let response = client
+            .get(&query_url)
+            .header("Authorization", auth_header)
+            .send()
+            .await?;
+        let json_string = response.text().await?;
+        let mut body: Value = serde_json::from_str(&json_string)?;
+
+        if let Some(prompts) = body.get_mut("prompts").and_then(Value::as_array_mut) {
+            let mut args_iter = args.iter();
+            for prompt in prompts.iter_mut() {
+                if let Some(default_value) = prompt.as_object_mut().and_then(|obj| obj.get_mut("defaultValue")) {
+                    if let Some(arg) = args_iter.next() {
+                        *default_value = serde_json::Value::String((*arg).to_string());
+                        println!("Updated defaultValue for {}: {}", prompt["prompt"], arg);
+                    } else {
+                        break; // Stop updating prompts if there are no more args
+                    }
+                }
+            }
+    
+            // Handle the case where there are more args than prompts
+            if args_iter.next().is_some() {
+                return Err(QueryError::TooManyArgs.into());
+            }
+        }
+         else {
+            return Err(QueryError::NoPromptField(json_string).into());
+        }
+        let query_url = format!("{}/Generate/Table", query_url);
+
+        let post_response = client
+            .post(&query_url)
+            .header("Authorization", auth_header)
+            .json(&body)
+            .send()
+            .await?;
+
+        if post_response.status().is_success() {
+            // The POST request was successful
+            let response_body = post_response.text().await?;
+            Ok(response_body)
+        } else {
+            // Handle the case where the POST request was not successful
+            Err(QueryError::PostRequestFailed(post_response.status()).into())
+        }
+
     }
 }
