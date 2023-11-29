@@ -18,7 +18,7 @@ pub enum QueryError{
     TooManyArgs,
     #[error("No prompt field in deserialized JSON. JSON String: {0}")]
     NoPromptField(String),
-    #[error("Post request failed: {}")]
+    #[error("Post request failed: {0}")]
     PostRequestFailed(StatusCode),
     #[error("Unknown query error")]
     Unknown
