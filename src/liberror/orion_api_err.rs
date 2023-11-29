@@ -14,6 +14,12 @@ pub enum AuthError {
 
 #[derive(Error, Debug)]
 pub enum QueryError{
+    #[error("Too many args were passed")]
+    TooManyArgs,
+    #[error("No prompt field in deserialized JSON. JSON String: {0}")]
+    NoPromptField(String),
+    #[error("Post request failed: {}")]
+    PostRequestFailed(StatusCode),
     #[error("Unknown query error")]
     Unknown
 }
