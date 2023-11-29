@@ -1,3 +1,7 @@
+/// Name: server.rs
+/// Description: This file is the main entry point for the server. It handles the creation of the named pipe and the http server and the proccessing of request.
+/// Any functions that need to be exposed to either  must be added here and in the pipe_client.rs file in the gui.
+
 //orion api
 mod orion_api;
 mod json_types;
@@ -11,7 +15,7 @@ use orion_api::OrionAPI;
 //shared pipe lib crate
 use stargazer::libpipe::{
     consts,
-    reqres::{RequestType, ResponseType, LoginResponse}
+    reqres::*
 };
 use stargazer::liberror::orion_api_err::*;
 //interprocess
@@ -106,6 +110,7 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>) -> String{
     println!("Handling request: {}", request);
     //Handle request to Orion API
     match serde_json::from_str::<RequestType>(request) {
+        //Login request
         Ok(RequestType::Login(login_request)) => {
             let result = orion_api.login(login_request.username.as_str(), login_request.password.as_str()).await;
             match result {
@@ -116,7 +121,7 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>) -> String{
                     serde_json::to_string(&resp).unwrap()
                 }
                 Err(e) => {
-                    //String must be a JSON string so extract error code
+                    //Response must be a JSON string so extract error code
                     //TODO: Handle Errors
                     let resp = ResponseType::Login(LoginResponse {
                         status: StatusCode::UNAUTHORIZED.as_u16()
@@ -124,12 +129,51 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>) -> String{
                     serde_json::to_string(&resp).unwrap()
                 }
             }
-        }
-        //other request types
-        Err(e) =>   {
+        },
+        //Query request
+        Ok(RequestType::Query(query_request)) => {
+            let result = orion_api.query(query_request.id, query_request.args).await;
+            match result {
+                Ok(data) =>  {
+                    let resp = ResponseType::Query(QueryResponse {
+                        status: StatusCode::OK.as_u16(),
+                        result: data,
+                    });
+                    serde_json::to_string(&resp).unwrap()
+                }
+                Err(e) => {
+                    let resp = ResponseType::Query(QueryResponse {
+                        status: StatusCode::UNAUTHORIZED.as_u16(),
+                        result: String::from(format!("Error: {}",e)),
+                    });
+                    serde_json::to_string(&resp).unwrap()
+                }
+            }
+        },
+        //GetQueryPrompts request
+        Ok(RequestType::GetQueryPrompts(get_query_prompts_request)) => {
+            let result = orion_api.get_query_prompts(get_query_prompts_request.id).await;
+            match result {
+                Ok(prompts) =>  {
+                    let resp = ResponseType::GetQueryPrompts(GetQueryPromptsResponse {
+                        status: StatusCode::OK.as_u16(),
+                        prompts: prompts,
+                    });
+                    serde_json::to_string(&resp).unwrap()
+                }
+                Err(e) => {
+                    let resp = ResponseType::GetQueryPrompts(GetQueryPromptsResponse {
+                        status: StatusCode::UNAUTHORIZED.as_u16(),
+                        prompts: String::from(format!("Error: {}",e)),
+                    });
+                    serde_json::to_string(&resp).unwrap()
+                }
+            }
+        },
+        //Error
+        Err(e) => {
             //TODO Handle Error
             String::from(format!("Error: {}",e))
         }
-       }
-
+    }
 }
