@@ -1,19 +1,13 @@
-use std::io::{Write, Read};
+// Name: pipe_client.rs
+// Description: provides simple functions that mirror orion_apis to simplify the process of calling through the named pipes.
+// Important: Any functions in the orion_api in the server must be reflected here for the gui to have access to them.  
 
+use std::io::{Write, Read};
 use named_pipe::PipeClient;
-//provides simple functions that mirror orion_apis to simplify the process of calling through the named pipes
 use stargazer::libpipe::{reqres::{ RequestType, LoginRequest, ResponseType}, consts};
 use reqwest::StatusCode;
 use serde_json;
-// let client = PipeClient::connect(consts::PIPE_NAME).expect("Error: Error creating pipe client with given name");
-//     client.write(serde_json::to_string(&RequestType::Login(LoginRequest { 
-//         username: username,
-//         password: password 
-//     })).unwrap().as_bytes());
 
-//     let mut buffer = vec![0; 1024];
-//     client.read(&mut buffer);
-//     buffer
 
 //takes in username and password to auth oapi
 pub async fn login(username: &str, password: &str) -> StatusCode {
