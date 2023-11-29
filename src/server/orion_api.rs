@@ -5,7 +5,7 @@ use secstr::*;
 use futures::lock::Mutex;
 use stargazer::liberror::orion_api_err::*;
 use anyhow::{Result,Error};
-use json_types::Prompt;
+use crate::json_types::Prompt;
 pub struct OrionAPI{
     //base API URL
     base_url: String,
@@ -132,7 +132,16 @@ impl OrionAPI{
             .send()
             .await?;
         let json_string = response.text().await?;
-        let mut body: Value = serde_json::from_str(&json_string)?;
+        let body: Value = serde_json::from_str(&json_string)?;
+        let prompts = body.get("prompts");
+        if let Some(prompts) = prompts {
+            let prompt_string = serde_json::to_string(&prompts)?;
+            Ok(prompt_string)
+        }
+        else {
+            Err(QueryError::NoPromptField(json_string).into())
+        }
+        
     }
 
     //TODO make this actually functional for all queries
@@ -151,7 +160,7 @@ impl OrionAPI{
 
         let response = client
             .get(&query_url)
-            .header("Authorization", auth_header)
+            .header("Authorization", auth_header.clone())
             .send()
             .await?;
         let json_string = response.text().await?;
