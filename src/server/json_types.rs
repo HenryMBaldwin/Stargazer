@@ -1,3 +1,4 @@
+
 use serde::{Deserialize, Serialize};
 
 //single prompt in "prompts" field for query
