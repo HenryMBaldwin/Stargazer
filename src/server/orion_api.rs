@@ -115,7 +115,7 @@ impl OrionAPI{
         }
     }
 
-    //returns the prompt item of an object as a json string
+    //returns the prompt field of a query as a json string
     pub async fn get_query_prompts(&self, id: String) -> Result<String> {
         let client = Client::new();
         let query_url = format!("{}Reporting/Custom/{}",self.base_url, id);
@@ -144,9 +144,9 @@ impl OrionAPI{
         
     }
 
-    //TODO make this actually functional for all queries
+    
     //generic query that returns JSON string of result or error
-    pub async fn query(&self, id: String, args: &[&str]) -> Result<String>{
+    pub async fn query(&self, id: String, args: Vec<String>) -> Result<String>{
 
         println!("Starting Query {}", id);
         let client = Client::new();
