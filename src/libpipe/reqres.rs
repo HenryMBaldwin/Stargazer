@@ -1,3 +1,7 @@
+/// Name: reqres.rs
+/// Description: This file defines the structs that are used to communicate between the server and any clients.
+/// Any functions that need to be exposed to either cleint must have request and response structs defined here.
+/// 
 use serde;
 use serde::{Serialize, Deserialize};
 
@@ -21,15 +25,18 @@ use serde::{Serialize, Deserialize};
 #[serde(tag = "type")]
 pub enum RequestType {
     Login(LoginRequest),
+    Query(QueryRequest),
+    GetQueryPrompts(GetQueryPromptsRequest),
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum ResponseType {
     Login(LoginResponse),
+    Query(QueryResponse),
+    GetQueryPrompts(GetQueryPromptsResponse),
 }
 
-//func()
 
 //struct request
 
@@ -49,3 +56,27 @@ pub struct LoginResponse{
     pub status: u16
 }
 
+//query()
+#[derive(Serialize, Deserialize)]
+pub struct QueryRequest{
+    pub id: String,
+    pub args: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct QueryResponse{
+    pub status: u16,
+    pub result: String,
+}
+
+//get_query_prompts()
+#[derive(Serialize, Deserialize)]
+pub struct GetQueryPromptsRequest{
+    pub id: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct GetQueryPromptsResponse{
+    pub status: u16,
+    pub prompts: String,
+}
