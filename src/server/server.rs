@@ -1,6 +1,6 @@
 //orion api
 mod orion_api;
-
+mod json_types;
 use reqwest::StatusCode;
 //tokio
 use tokio::net::TcpListener;
