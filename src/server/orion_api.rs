@@ -5,7 +5,6 @@ use secstr::*;
 use futures::lock::Mutex;
 use stargazer::liberror::orion_api_err::*;
 use anyhow::{Result,Error};
-use crate::json_types::Prompt;
 pub struct OrionAPI{
     //base API URL
     base_url: String,
