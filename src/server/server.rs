@@ -5,6 +5,8 @@
 //orion api
 mod orion_api;
 mod json_types;
+mod db_controller;
+use iced::theme::palette::Danger;
 use reqwest::StatusCode;
 //tokio
 use tokio::net::TcpListener;
@@ -12,6 +14,7 @@ use tokio::net::TcpListener;
 use futures::{AsyncReadExt, AsyncWriteExt};
 use http_body_util::Full;
 use orion_api::OrionAPI;
+use db_controller::DBController;
 //shared pipe lib crate
 use stargazer::libpipe::{
     consts,
@@ -37,20 +40,20 @@ use serde::Deserialize;
 pub async fn main() {
     
     let orion_api = Arc::new(OrionAPI::new());
-    
-    tokio::join!(http_server(orion_api.clone()),pipe_server(orion_api.clone()));
+    let db_controller = Arc::new(DBController::new().expect("Error creating DBController"));
+    tokio::join!(http_server(orion_api.clone(), db_controller.clone()),pipe_server(orion_api.clone(), db_controller.clone()));
         
 }
 
 
 //http server
-async fn http_server(orion_api: Arc<OrionAPI>)  {
+async fn http_server(orion_api: Arc<OrionAPI>, db_controller: Arc<DBController>)  {
    
 
     // Handler function for the web service
-    async fn process_request(body: web::Bytes, orion_api: web::Data<Arc<OrionAPI>>) -> impl Responder {
+    async fn process_request(body: web::Bytes, orion_api: web::Data<Arc<OrionAPI>>, db_controller: web::Data<Arc<DBController>>) -> impl Responder {
         let request = String::from_utf8(body.to_vec()).unwrap();
-        let response = handle_request(&request, orion_api.get_ref().clone()).await;
+        let response = handle_request(&request, orion_api.get_ref().clone(), db_controller.get_ref().clone()).await;
         HttpResponse::Ok().content_type("application/json").body(response)
     }
 
@@ -67,6 +70,7 @@ async fn http_server(orion_api: Arc<OrionAPI>)  {
                 .max_age(3600)
         )
             .app_data(web::Data::new(orion_api.clone()))
+            .app_data(web::Data::new(db_controller.clone()))
             .route("/process", web::post().to(process_request))
     })
     .bind("127.0.0.1:4200").expect("error binding.")
@@ -75,7 +79,7 @@ async fn http_server(orion_api: Arc<OrionAPI>)  {
 }
 
 //pipe server
-async fn pipe_server(orion_api: Arc<OrionAPI>) {
+async fn pipe_server(orion_api: Arc<OrionAPI>, db_controller: Arc<DBController>) {
     //create PipeListener
     let listener: named_pipe::tokio::PipeListener<_> = named_pipe::PipeListenerOptions::new()
     .name(Cow::from(OsStr::new(consts::PIPE_NAME_SERVER)))
@@ -87,7 +91,7 @@ async fn pipe_server(orion_api: Arc<OrionAPI>) {
         
 
         let orion_api_clone = orion_api.clone();
-
+        let db_controller_clone = db_controller.clone();
         
         //blocks until connection is made
         let connection = listener.accept().await.expect("Error accepting connection");
@@ -96,7 +100,7 @@ async fn pipe_server(orion_api: Arc<OrionAPI>) {
             let (mut reader, mut writer) = connection.split();
             let mut buffer = vec![0; 1024];
             let read = reader.read(&mut buffer).await.expect("Error couldn't read string");
-            let response = handle_request(&String::from_utf8_lossy(&buffer[..read]).to_string(), orion_api_clone).await;
+            let response = handle_request(&String::from_utf8_lossy(&buffer[..read]).to_string(), orion_api_clone, db_controller_clone).await;
 
             writer.write_all(response.as_bytes()).await.expect("Error Writing");
             writer.close().await.expect("Error closing the writer!");
@@ -106,7 +110,8 @@ async fn pipe_server(orion_api: Arc<OrionAPI>) {
     }
 }
 
-async fn handle_request(request: &str, orion_api: Arc<OrionAPI>) -> String{
+//handles requests, agnostic of whether they come from http or pipe server
+async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, db_controller: Arc<DBController>) -> String{
     println!("Handling request: {}", request);
     //Handle request to Orion API
     match serde_json::from_str::<RequestType>(request) {
@@ -132,21 +137,37 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>) -> String{
         },
         //Query request
         Ok(RequestType::Query(query_request)) => {
-            let result = orion_api.query(query_request.id, query_request.args).await;
-            match result {
-                Ok(data) =>  {
-                    let resp = ResponseType::Query(QueryResponse {
-                        status: StatusCode::OK.as_u16(),
-                        result: data,
-                    });
-                    serde_json::to_string(&resp).unwrap()
-                }
-                Err(e) => {
-                    let resp = ResponseType::Query(QueryResponse {
-                        status: StatusCode::UNAUTHORIZED.as_u16(),
-                        result: String::from(format!("Error: {}",e)),
-                    });
-                    serde_json::to_string(&resp).unwrap()
+            let query_id: String = query_request.id.clone();
+            let query_args:  Vec<String> = query_request.args.clone();
+
+            //check if query is cached
+            if db_controller.query_exists(query_id.clone(), &query_args).unwrap() {
+                let result = db_controller.get_query(query_id.clone(), &query_args).unwrap();
+                let resp = ResponseType::Query(QueryResponse {
+                    status: StatusCode::OK.as_u16(),
+                    result: result,
+                });
+                serde_json::to_string(&resp).unwrap()
+            }
+            else {
+                let result = orion_api.query(query_id.clone(), query_args.clone()).await;
+                match result {
+                    Ok(data) =>  {
+                        let resp = ResponseType::Query(QueryResponse {
+                            status: StatusCode::OK.as_u16(),
+                            result: data.clone(),
+                        });
+                        //cache query
+                        db_controller.insert_query(query_id, &query_args, &data).unwrap();
+                        serde_json::to_string(&resp).unwrap()
+                    }
+                    Err(e) => {
+                        let resp = ResponseType::Query(QueryResponse {
+                            status: StatusCode::UNAUTHORIZED.as_u16(),
+                            result: String::from(format!("Error: {}",e)),
+                        });
+                        serde_json::to_string(&resp).unwrap()
+                    }
                 }
             }
         },
