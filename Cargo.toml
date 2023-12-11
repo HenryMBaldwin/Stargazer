@@ -43,7 +43,10 @@ actix-web = "4.4.0"
 actix-cors = "0.6.4"
 thiserror = "1.0.50"
 anyhow = "1.0.75"
-rusqlite = "0.30.0"
 sha2 = "0.10.8"
+r2d2_sqlite = "0.23.0"
+r2d2 = "0.8.10"
+rusqlite = {version = "0.30.0", features = ["bundled"]}
+
 
 
