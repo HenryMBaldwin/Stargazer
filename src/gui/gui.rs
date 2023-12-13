@@ -23,9 +23,6 @@ use views::{
     components
 };
 
-//Orion APi
-mod orion_api;
-use orion_api::OrionAPI;
 
 //orion pipe client
 mod pipe_client;
@@ -63,7 +60,6 @@ fn main() -> Result<(), iced::Error> {
 
 //main controller and page manager for our application
 pub struct MainApp{
-    oapi: Arc<OrionAPI>,
     //currently displayed page
     current_view: Views,
     //pages
@@ -101,16 +97,22 @@ impl Application for MainApp {
     type Flags = ();
 
     fn new(_flage: ()) -> (MainApp, Command<AppMessage>) {
-        let oapi = Arc::new(OrionAPI::new()).clone();
         (   
             MainApp { 
-                oapi: oapi.clone(),
                 //init with login page visible
                 current_view: Views::LoginPage,
-                login_page: LoginPage::new(oapi.clone()), 
-                success_page: SuccessPage::new(oapi.clone())
+                login_page: LoginPage::new(), 
+                success_page: SuccessPage::new()
             },
-            Command::none()
+            Command::perform(async move {pipe_client::check_auth().await},
+             |auth| {
+                if auth {
+                    AppMessage::ChangeView(Views::SuccessPage)
+                }
+                else{
+                    AppMessage::ChangeView(Views::LoginPage)
+                }
+             })
         )
         
     }
