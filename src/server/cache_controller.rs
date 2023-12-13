@@ -71,6 +71,7 @@ impl CacheController{
         Ok(())
     }
 
+    //creates a table from a json response
     fn create_table(&self, table_name: String, response: &str) -> Result<()> {
         let conn = self.pool.get()?;
         let parsed: Value = serde_json::from_str(response)?;
@@ -80,83 +81,111 @@ impl CacheController{
             if let Some(val) = arr.get(0) {
                 if let Some(obj) = val.as_object() {
                     let types_vec = Self::extract_field_types(obj)?;
-                    let mut sql = format!("CREATE TABLE {} (RecordId INTEGER PRIMARY KEY NOT NULL", table_name);
+                    let mut table_sql = format!("CREATE TABLE {} (RecordId INTEGER PRIMARY KEY NOT NULL", table_name.clone());
 
-                    for (key, val_type) in types_vec {
+                    for (key, mut val_type) in types_vec.clone() {
                         if val_type == "BOOLEAN"{
-                            val_type = "TEXT";
+                            val_type = String::from("TEXT");
                         }
-                        sql.push_str(format!(", {} {}", key, val_type).as_str());
+                        table_sql.push_str(format!(", {} {}", key, val_type).as_str());
                     }
-                    sql.push_str(")");
+                    table_sql.push_str(")");
                     //drop table if it exists
-                    self.drop_table_if_exists(table_name);
+                    self.drop_table_if_exists(table_name.clone());
+                    
                     //create table
-                    conn.execute(&sql, [])?;
+                    conn.execute(&table_sql, [])?;
+
+                    //insert all arr entries into newly created table
+                    for entry in arr {
+                        let mut sql = format!("INSERT INTO {} (", table_name.clone());
+                        let mut val_sql = format!("VALUES (");
+                        for (key, val_type) in types_vec.clone() {
+                            if let Some(val) = entry.get(key.clone()) {
+                                match val_type.as_str() {
+                                    "TEXT" => {
+                                        if let Some(val) = val.as_str() {
+                                            sql.push_str(format!("{},", key).as_str());
+                                            val_sql.push_str(format!("{},", val).as_str());
+                                        }
+                                        else {
+                                            self.delete_cache_entry(table_name.clone())?;
+                                            return Err(CacheControllerError::CreateTableError("TEXT field has non-string value".to_string()).into());
+                                        }
+                                    },
+                                    "INTEGER" => {
+                                        if let Some(val) = val.as_i64() {
+                                            sql.push_str(format!("{},", key).as_str());
+                                            val_sql.push_str(format!("{},", val).as_str());
+                                        }
+                                        else {
+                                            self.delete_cache_entry(table_name.clone())?;
+                                            return Err(CacheControllerError::CreateTableError("INTEGER field has non-integer value".to_string()).into());
+                                        }
+                                    },
+                                    "BOOLEAN" => {
+                                        if let Some(val) = val.as_bool() {
+                                            let val = if val {"true"} else {"false"};
+                                            sql.push_str(format!("{},", key).as_str());
+                                            val_sql.push_str(format!("{},", val).as_str());
+                                        }
+                                        else {
+                                            self.delete_cache_entry(table_name.clone())?;
+                                            return Err(CacheControllerError::CreateTableError("BOOLEAN field has non-boolean value".to_string()).into());
+                                        }
+                                    }
+                                    _ => {
+                                        self.delete_cache_entry(table_name.clone())?;
+                                        return Err(CacheControllerError::CreateTableError("Unsupported field type".to_string()).into());
+                                    }
+                                }
+                            }
+                            else{
+                                self.delete_cache_entry(table_name.clone())?;
+                                return Err(CacheControllerError::CreateTableError("JSON field not found in response".to_string()).into());
+                            }
+                        }
+                        let mut sql = sql.trim_end_matches(',').to_string();
+                        let mut val_sql = val_sql.trim_end_matches(',').to_string();
+                        sql.push_str(")");
+                        val_sql.push_str(")");
+                        sql.push_str(val_sql.as_str());
+
+                        //add item to table
+                        conn.execute(&sql, [])?;
+                    }
+                
                 }
                 else {
-                    //TODO: Handle error
-                    Err()
+                    self.delete_cache_entry(table_name.clone())?;
+                    return Err(CacheControllerError::CreateTableError("First entry in JSON response is not an object.".to_string()).into());
                 }
             }
             else {
-                //TODO: Handle error
-                Err()
+                self.delete_cache_entry(table_name.clone())?;
+                return Err(CacheControllerError::CreateTableError("JSON response is not an array of objects or is empty".to_string()).into());
             }
-            //insert all arr entries into newly created table
-            for entry in arr {
-                let mut sql = format!("INSERT INTO {} (", table_name);
-                for (key, val_type) in types_vec{
-                    if let Some(val) = entry.get(key) {
-                        match val_type {
-                            "TEXT" => {
-                                if let Some(val) = val.as_str() {
-                                    sql.push_str(format!("{},", val).as_str());
-                                }
-                                else {
-                                    //TODO: Handle error
-                                    Err()
-                                }
-                            },
-                            "INTEGER" => {
-                                if let Some(val) = val.as_i64() {
-                                    sql.push_str(format!("{},", val).as_str());
-                                }
-                                else {
-                                    //TODO: Handle error
-                                    Err()
-                                }
-                            },
-                            "BOOLEAN" => {
-                                if let Some(val) = val.as_bool() {
-                                    val = if val {"true"} else {"false"};
-                                    sql.push_str(format!("{},", val).as_str());
-                                }
-                                else {
-                                    //TODO: Handle error
-                                    Err()
-                                }
-                            }
-                        }
-                    }
-                    else{
-                        //TODO: Handle error
-                        Err()
-                    }
-                    
-
-                }
             
             Ok(())
         }
         else{
-            //TODO: Handle error
-            Err()
+            self.delete_cache_entry(table_name.clone())?;
+            return Err(CacheControllerError::CreateTableError("JSON response is not an array".to_string()).into());
         }
     }
 
     //helper functions
 
+    //Deletes a cache and its associated table
+    fn delete_cache_entry(&self, table_name: String) -> Result<()>{
+        let conn = self.pool.get()?;
+        //drop table
+        self.drop_table_if_exists(table_name.clone())?;
+
+        //delete entry;
+        conn.execute("DELETE FROM queries WHERE hash = ?1", [table_name])?;
+        Ok(())
+    }
     //drops a table if it exists
     fn drop_table_if_exists(&self, table_name: String) ->Result<()>{
         let conn = self.pool.get()?;
@@ -174,7 +203,7 @@ impl CacheController{
                 Value::String(_) => "TEXT",
                 Value::Number(_) => "INTEGER",
                 Value::Bool(_) => "BOOLEAN",
-                _ => {return Err(CacheControllerError::UnsupportedJsonType(key).into())},
+                _ => {return Err(CacheControllerError::UnsupportedJsonType(key.to_string()).into())},
             };
             types_vec.push((key.clone(), type_str.to_string()));
         }
