@@ -4,7 +4,7 @@
 
 use std::io::{Write, Read};
 use named_pipe::PipeClient;
-use stargazer::libpipe::{reqres::{ RequestType, LoginRequest, ResponseType}, consts};
+use stargazer::libpipe::{reqres::{ RequestType, LoginRequest, ResponseType, CheckAuthRequest}, consts};
 use reqwest::StatusCode;
 use serde_json;
 
@@ -26,6 +26,18 @@ pub async fn login(username: &str, password: &str) -> StatusCode {
     
 }
 
+//checks whether server has a valid login
+pub async fn check_auth() -> bool {
+    let request = serde_json::to_string(&RequestType::CheckAuth(CheckAuthRequest{})).expect("Error: error serializing json.");
+    let response = serde_json::from_str::<ResponseType>(&send_wait(&request).await).expect("Error deserializing json.");
+    match response {
+        ResponseType::CheckAuth(check_auth) => check_auth.result,
+        _ => {
+            //TODO: Handle errors
+            false
+        }
+    }
+}    
 // writes request to named pipe and waits for reponse
 async fn send_wait(request: &str) -> String {
     let mut client = PipeClient::connect(consts::PIPE_NAME).expect("Error: Error creating pipe client with given name.");

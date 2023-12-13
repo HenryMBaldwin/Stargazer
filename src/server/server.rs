@@ -135,6 +135,25 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
                 }
             }
         },
+        //CheckAuth request
+        Ok(RequestType::CheckAuth(_check_auth_request)) => {
+            println!("Checking auth");
+            let result = orion_api.check_auth().await;
+            match result {
+                true =>  {
+                    let resp = ResponseType::CheckAuth(CheckAuthResponse {
+                        result: true,
+                    });
+                    serde_json::to_string(&resp).unwrap()
+                }
+                false => {
+                    let resp = ResponseType::CheckAuth(CheckAuthResponse {
+                        result: false,
+                    });
+                    serde_json::to_string(&resp).unwrap()
+                }
+            }
+        },
         //Query request
         Ok(RequestType::Query(query_request)) => {
             let query_id: String = query_request.id.clone();

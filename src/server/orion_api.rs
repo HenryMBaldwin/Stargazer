@@ -87,6 +87,11 @@ impl OrionAPI{
         
     }
 
+    //returns whether the instance currently has a valid auth token
+    pub async fn check_auth(&self) -> bool {
+        self.auth_valid.lock().await.clone()
+    }
+
     //gets auth token, attempts reauthentication if auth token is empty or invalid
     async fn get_auth(&self)-> Result<String>{
         //if auth token is valid then return auth token

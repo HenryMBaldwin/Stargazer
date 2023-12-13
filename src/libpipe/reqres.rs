@@ -25,6 +25,7 @@ use serde::{Serialize, Deserialize};
 #[serde(tag = "type")]
 pub enum RequestType {
     Login(LoginRequest),
+    CheckAuth(CheckAuthRequest),
     Query(QueryRequest),
     GetQueryPrompts(GetQueryPromptsRequest),
 }
@@ -33,6 +34,7 @@ pub enum RequestType {
 #[serde(tag = "type")]
 pub enum ResponseType {
     Login(LoginResponse),
+    CheckAuth(CheckAuthResponse),
     Query(QueryResponse),
     GetQueryPrompts(GetQueryPromptsResponse),
 }
@@ -55,6 +57,16 @@ pub struct LoginResponse{
     //where u16 is a status code
     pub status: u16
 }
+
+//check_auth()
+#[derive(Serialize, Deserialize)]
+pub struct CheckAuthRequest{}
+
+#[derive(Serialize, Deserialize)]
+pub struct CheckAuthResponse{
+    pub result: bool,
+}
+
 
 //query()
 #[derive(Serialize, Deserialize)]
