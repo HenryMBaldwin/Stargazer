@@ -5,11 +5,7 @@ use iced::{
     widget::{Container, Column, Text, button, text},
     Length, Command, alignment::Horizontal
 };
-use crate::{AppMessage, orion_api};
-
-use orion_api::OrionAPI;
-
-
+use crate::{AppMessage};
 
 #[derive(Debug, Clone)]
 pub enum SuccessPageMessage {
@@ -17,24 +13,18 @@ pub enum SuccessPageMessage {
     //This command will be a catch all to reuse upon testing different things
     ExecCommand
 }
-pub struct SuccessPage {
-    oapi: Arc<OrionAPI>,
-}
+pub struct SuccessPage;
+
 
 impl SuccessPage {
-    pub fn new(oapi: Arc<OrionAPI>) -> Self {
-        Self {
-            oapi
-        }
+    pub fn new() -> Self {
+        Self {}
     }
 
     pub fn update(&mut self, message: SuccessPageMessage) -> Command<AppMessage> {
         match message {
             SuccessPageMessage::ExecCommand => {
-                let oapi = self.oapi.clone();
-                Command::perform(async move {
-                    oapi.query(String::from("13737")).await;
-                },
+                Command::perform(async move {},
                 |_|{
                     AppMessage::NoneMsg
                 })

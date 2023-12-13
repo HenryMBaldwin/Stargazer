@@ -13,16 +13,11 @@ use stargazer::libpipe::{reqres,consts};
 //named pipes
 use crate::pipe_client;
 //Styles
-use crate::{views::components::error_components::ErrorText, AppMessage, orion_api, Views};
-
-
-//Orion API
-use orion_api::OrionAPI;
+use crate::{views::components::error_components::ErrorText, AppMessage, Views};
 
 use super::components::gold_button::GoldButton;
 
 pub struct LoginPage {
-    oapi: Arc<OrionAPI>,
     username: String,
     password: String,
     password_id: text_input::Id,
@@ -46,9 +41,8 @@ pub enum LoginPageMessage{
 //Impl
 impl LoginPage {
     
-    pub fn new(oapi: Arc<OrionAPI>) -> Self {
+    pub fn new() -> Self {
         Self { 
-            oapi,
             username: String::new(),
             password: String::new(), 
             password_id: text_input::Id::unique(),
