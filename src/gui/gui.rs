@@ -20,7 +20,8 @@ mod views;
 use views::{
     login_page::{LoginPage, LoginPageMessage},
     success_page::{SuccessPage, SuccessPageMessage},
-    components
+    dashboard::{DashBoard, DashBoardMessage},
+    components,
 };
 
 
@@ -64,7 +65,8 @@ pub struct MainApp{
     current_view: Views,
     //pages
     login_page: LoginPage,
-    success_page: SuccessPage
+    success_page: SuccessPage,
+    dashbaord: DashBoard,
     //..
 }
 
@@ -77,7 +79,8 @@ pub enum AppMessage {
     NoneMsg,
     //page messages
     LoginPageMessage(LoginPageMessage),
-    SuccessPageMessage(SuccessPageMessage)
+    SuccessPageMessage(SuccessPageMessage),
+    DashBoardMessage(DashBoardMessage),
 
     //..
 }
@@ -86,7 +89,8 @@ pub enum AppMessage {
 pub enum Views {
     //Pages
     LoginPage,
-    SuccessPage
+    SuccessPage,
+    DashBoard,
     //..
 }
 
@@ -102,12 +106,13 @@ impl Application for MainApp {
                 //init with login page visible
                 current_view: Views::LoginPage,
                 login_page: LoginPage::new(), 
-                success_page: SuccessPage::new()
+                success_page: SuccessPage::new(),
+                dashbaord: DashBoard::new(),
             },
             Command::perform(async move {pipe_client::check_auth().await},
              |auth| {
                 if auth {
-                    AppMessage::ChangeView(Views::SuccessPage)
+                    AppMessage::ChangeView(Views::DashBoard)
                 }
                 else{
                     AppMessage::ChangeView(Views::LoginPage)
@@ -133,6 +138,9 @@ impl Application for MainApp {
             AppMessage::SuccessPageMessage(msg) => {
                 self.success_page.update(msg)
             },
+            AppMessage::DashBoardMessage(msg) => {
+                self.dashbaord.update(msg)
+            },
             AppMessage::NoneMsg => Command::none()
         }
     }
@@ -142,7 +150,8 @@ impl Application for MainApp {
         match self.current_view {
             //Views
             Views::LoginPage => self.login_page.view().map(move |message| AppMessage::LoginPageMessage(message)),
-            Views::SuccessPage => self.success_page.view().map(move |message| AppMessage::SuccessPageMessage(message))
+            Views::SuccessPage => self.success_page.view().map(move |message| AppMessage::SuccessPageMessage(message)),
+            Views::DashBoard => self.dashbaord.view().map(move |message| AppMessage::DashBoardMessage(message)),
             //..
         }
     }
