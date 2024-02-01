@@ -4,7 +4,7 @@ use reqwest::StatusCode;
 //iced
 use iced::widget::{button, image, text, text_input, Button, Text, Column, Container, Image, Row, TextInput};
 use iced::alignment::{Alignment, Horizontal};
-use iced::{Color, Element, Length, theme, Command};
+use iced::{Color, Element, Length, theme, Command, BorderRadius};
 
 use stargazer::libpipe::reqres::{LoginRequest, RequestType};
 //shared pipe lib
@@ -15,7 +15,8 @@ use crate::pipe_client;
 //Styles
 use crate::{views::components::error_components::ErrorText, AppMessage, Views};
 
-use super::components::gold_button::GoldButton;
+use super::components::custom_button_style::CustomButtonStyle;
+use super::components::gold_button::gold_button;
 
 pub struct LoginPage {
     username: String,
@@ -119,12 +120,21 @@ impl LoginPage {
         .width(Length::Fixed(300.0))
         .password();
 
+        let gold_button_style = CustomButtonStyle::new()
+        .background_color(Color::from_rgb(0.8, 0.6, 0.0))
+        .border_radius(BorderRadius::from(0.0)).border_width(0.0)
+        .border_width(2.0)
+        .border_color(Color::from_rgb(0.7, 0.5, 0.0))
+        .shadow_offset(iced::Vector::new(1.0, 1.0));
         // Login button
         let login_button = Button::new( Text::new("Login").horizontal_alignment(Horizontal::Center))
             .on_press(LoginPageMessage::LoginPressed)
-            .width(Length::Fixed(300.0))
-            ;//.style(iced::theme::Button::Custom(Box::new(GoldButton)));
+             .width(Length::Fixed(300.0))
+             .style(gold_button_style.as_custom());
 
+        // let login_button: Button<'_, LoginPageMessage> = gold_button("Login")
+        // .on_press(LoginPageMessage::LoginPressed)
+        // .width(Length::Fixed(300.0));
         // Layout
         let mut col = Column::new()
             .align_items(Alignment::Center)
