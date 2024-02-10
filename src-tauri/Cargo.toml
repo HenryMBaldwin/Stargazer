@@ -1,23 +1,46 @@
 [package]
-name = "app"
+name = "stargazer"
 version = "0.1.0"
 description = "A Tauri App"
 authors = ["you"]
 license = ""
 repository = ""
-default-run = "app"
+default-run = "stargazer"
 edition = "2021"
 rust-version = "1.60"
+
+[[bin]]
+name = "stargazer"
+path = "src/gui/gui.rs"
+
+[[bin]]
+name = "server"
+path = "src/server/server.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "1.5.1" }
+tauri-build = { version = "1.5.1", features = [] }
 
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.5.4" }
+tauri = { version = "1.5.4", features = [] }
+thiserror = "1.0.56"
+reqwest = {version = "0.11.22", features = ["json"] }
+r2d2 = "0.8.10"
+r2d2_sqlite = "0.23.0"
+anyhow = "1.0.79"
+sha2 = "0.10.8"
+secstr = "0.5.1"
+futures = "0.3.30"
+tokio = {version = "1", features = ["full"] }
+http-body-util = "0.1.0"
+interprocess = {version = "1.2.1", features = ["tokio_support"] }
+actix-cors = "0.7.0"
+actix-web = "4.5.1"
+rusqlite = {version = "0.30.0", features = ["bundled"] }
+named_pipe = "0.4.1"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

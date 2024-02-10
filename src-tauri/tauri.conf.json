@@ -55,10 +55,10 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 600,
-        "resizable": true,
+        "height": 496,
+        "resizable": false,
         "title": "stargazer",
-        "width": 800
+        "width": 910
       }
     ]
   }

@@ -10,17 +10,18 @@ use serde_json;
 
 
 //takes in username and password to auth oapi
-pub async fn login(username: &str, password: &str) -> StatusCode {
+#[tauri::command]
+pub async fn login(username: String, password: String) -> u16 {
     let request = serde_json::to_string(&RequestType::Login(LoginRequest {
-        username: String::from(username),
-        password: String::from(password)
+        username: username,
+        password: password
     })).expect("Error: error serializing json.");
     let response = serde_json::from_str::<ResponseType>(&send_wait(&request).await).expect("Error deserializing json.");
     match response {
-        ResponseType::Login(login) => StatusCode::from_u16(login.status).expect("Error, invalid status code."),
+        ResponseType::Login(login) => StatusCode::from_u16(login.status).expect("Error, invalid status code.").as_u16(),
         _ => {
             //TODO: Handle errors
-            StatusCode::UNAUTHORIZED
+            StatusCode::UNAUTHORIZED.as_u16()
         }
     }
     

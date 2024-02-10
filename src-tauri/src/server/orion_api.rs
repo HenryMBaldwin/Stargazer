@@ -48,7 +48,7 @@ impl OrionAPI{
 
     //attempts to authenticate with Orion using saved username and password
     async fn authenticate(&self) -> Result<StatusCode> {
-        
+        println!("Authenticating");
         //combine the 
         //url 
         let auth_url =format!("{}security/token", self.base_url);
