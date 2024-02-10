@@ -20,7 +20,9 @@
             if (res) {
                 goto('/dashboard');
             }
-            authChecked = true;
+            else{
+                authChecked = true;
+            }
         });
         
     });
