@@ -11,7 +11,7 @@
         let stat = await invoke('login', {username: username, password: password});
          console.log('Login status: ' + stat);
         if (stat == StatusCodes.OK) {
-            goto('/success');
+            goto('/dashboard');
         } else {
             console.log('Login failed');
         }
@@ -59,15 +59,19 @@
     }
 
     button {
-    padding: 10px 20px;
+    padding: 8px 20px;
+    margin: 10px 0;
     border: none;
     border-radius: 4px;
-    background-color: #007bff;
-    color: white;
+    background-color: #D4AF37;
+    color: rgb(255, 255, 255);
+
+    font-size: large;
     cursor: pointer;
+    
     }
 
     button:hover {
-    background-color: #0056b3;
+    background-color: #ac8b1f;
     }
 </style>
