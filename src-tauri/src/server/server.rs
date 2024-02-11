@@ -113,6 +113,13 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
     println!("Handling request: {}", request);
     //Handle request to Orion API
     match serde_json::from_str::<RequestType>(request) {
+        //CheckAlive request
+        Ok(RequestType::CheckAlive(_)) => {
+            let resp = ResponseType::CheckAlive(CheckAliveResponse {
+                status: true
+            });
+            serde_json::to_string(&resp).unwrap()
+        },
         //Login request
         Ok(RequestType::Login(login_request)) => {
             let result = orion_api.login(login_request.username.as_str(), login_request.password.as_str()).await;
