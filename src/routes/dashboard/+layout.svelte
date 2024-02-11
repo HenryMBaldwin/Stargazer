@@ -5,7 +5,7 @@
   <div class="container">
     <nav>
     <div class="nav-header">
-        <img class="header-img" src="src\lib\assets\telescope.svg" alt="Telescope">
+        <img class="header-img" src="/assets/telescope.svg" alt="Telescope">
         Stargazer</div>
       <a href="/dashboard/home">Home</a>
       <a href="/dashboard">About</a>
@@ -28,7 +28,7 @@
     }
     
     .header-img {
-      width: 75px;
+      width: 55px;
     }
     .nav-header {
       display: flex;
