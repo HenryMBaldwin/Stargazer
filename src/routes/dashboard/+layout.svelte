@@ -1,15 +1,46 @@
 <script>
-    // Any necessary script here
-  </script>
+    
+</script>
+  
+  <div class="container">
+    <nav>
+    <div class="nav-header">
+        <img class="header-img" src="src\lib\assets\telescope.svg" alt="Telescope">
+        Stargazer</div>
+      <a href="/dashboard/home">Home</a>
+      <a href="/dashboard">About</a>
+      <a href="/dashboard">Contact</a>
+      <!-- Add more links as necessary -->
+    </nav>
+  
+    <main>
+      <slot></slot> <!-- Content from individual pages will be rendered here -->
+    </main>
+  </div>
   
   <style>
+    
     .container {
       display: flex;
       height: 100vh;
       margin: 0; /* Removes default margin */
       padding: 0; /* Removes default padding */
     }
-  
+    
+    .header-img {
+      width: 75px;
+    }
+    .nav-header {
+      display: flex;
+      flex-direction: column;
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      font-family: "Aleo", sans-serif;
+      text-decoration: underline;
+      color:#050505;
+      align-items: center;
+    }
     nav {
       background-color: #fafafa; /* slightly off-white color */
       width: 125px; /* adjust the width as needed */
@@ -40,18 +71,11 @@
       margin: 0;
       padding: 0;
     }
+
+    @font-face {
+    font-family: 'Aleo';
+    src: url('/fonts/Aleo-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
   </style>
-  
-  <div class="container">
-    <nav>
-      <a href="/dashboard/home">Home</a>
-      <a href="/dashboard">About</a>
-      <a href="/dashboard">Contact</a>
-      <!-- Add more links as necessary -->
-    </nav>
-  
-    <main>
-      <slot></slot> <!-- Content from individual pages will be rendered here -->
-    </main>
-  </div>
-  
