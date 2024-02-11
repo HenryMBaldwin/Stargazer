@@ -4,13 +4,26 @@ use sha2::{Sha256, Digest};
 use anyhow::Result;
 use serde_json::{Value, Map};
 use stargazer::liberror::cache_controller_err::*;
-
+use std::path::Path;
+use std::fs::{self, File};
 pub struct CacheController {
     pool: Pool<SqliteConnectionManager>,
 }
 
 impl CacheController{
     pub fn new() -> Result<Self> {
+        let db_path = "db/queries.sqlite";
+        let db_dir = Path::new("db");
+
+        // Check if the directory exists, create it if it doesn't
+        if !db_dir.exists() {
+            fs::create_dir_all(db_dir).expect("Failed to create directory");
+        }
+
+        // Check if the file exists, create it if it doesn't
+        if !Path::new(db_path).exists() {
+            File::create(db_path).expect("Failed to create file");
+        }
         let manager = SqliteConnectionManager::file("db/queries.sqlite");
         let pool = Pool::new(manager)?;
         let cache_controller = Self { pool };
