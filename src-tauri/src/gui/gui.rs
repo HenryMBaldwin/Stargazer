@@ -4,7 +4,7 @@
 mod pipe_client;
 fn main() {
   tauri::Builder::default()
-    .invoke_handler(tauri::generate_handler![pipe_client::login, pipe_client::check_auth])
+    .invoke_handler(tauri::generate_handler![pipe_client::login, pipe_client::check_auth, pipe_client::check_alive])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
