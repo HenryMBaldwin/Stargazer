@@ -1,6 +1,9 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 /// Name: server.rs
 /// Description: This file is the main entry point for the server. It handles the creation of the named pipe and the http server and the proccessing of request.
 /// Any functions that need to be exposed to either  must be added here and in the pipe_client.rs file in the gui.
+
 
 //orion api
 mod orion_api;
