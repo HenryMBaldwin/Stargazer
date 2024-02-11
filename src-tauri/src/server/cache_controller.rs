@@ -6,14 +6,18 @@ use serde_json::{Value, Map};
 use stargazer::liberror::cache_controller_err::*;
 use std::path::Path;
 use std::fs::{self, File};
+use tauri::api::path::cache_dir;
 pub struct CacheController {
     pool: Pool<SqliteConnectionManager>,
 }
 
 impl CacheController{
     pub fn new() -> Result<Self> {
-        let db_path = "db/queries.sqlite";
-        let db_dir = Path::new("db");
+
+        let local_app_data = cache_dir().expect("Could not find local app data directory");
+        //concatenate local_app_data with the db path
+        let db_path = local_app_data.join("stargazer/db/queries.sqlite");
+        let db_dir = db_path.parent().unwrap();
 
         // Check if the directory exists, create it if it doesn't
         if !db_dir.exists() {
@@ -21,10 +25,10 @@ impl CacheController{
         }
 
         // Check if the file exists, create it if it doesn't
-        if !Path::new(db_path).exists() {
-            File::create(db_path).expect("Failed to create file");
+        if !db_path.exists() {
+            File::create(&db_path).expect("Failed to create file");
         }
-        let manager = SqliteConnectionManager::file("db/queries.sqlite");
+        let manager = SqliteConnectionManager::file(db_path);
         let pool = Pool::new(manager)?;
         let cache_controller = Self { pool };
         cache_controller.init()?;
