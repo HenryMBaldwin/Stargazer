@@ -76,7 +76,7 @@
     {#if authChecked}
     <div class="image-container">
         <!-- svelte-ignore a11y-img-redundant-alt -->
-        <img src="src\lib\assets\stargazer_black_vert_transparent.png" alt="Login Image">
+        <img src="/assets/stargazer_black_vert_transparent.png" alt="Login Image">
     </div>
     <div class="form-container">
         
