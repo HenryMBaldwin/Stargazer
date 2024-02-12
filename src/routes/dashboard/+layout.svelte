@@ -1,15 +1,18 @@
 <script>
-    
+    import ServerStatus from "$lib/components/ServerStatus.svelte";
+    import NavEntry from "$lib/components/NavEntry.svelte";
 </script>
   
   <div class="container">
-    <nav>
+    <nav class="nav-container">
     <div class="nav-header">
         <img class="header-img" src="/assets/telescope.svg" alt="Telescope">
         Stargazer</div>
-      <a href="/dashboard/home">Home</a>
-      <a href="/dashboard">About</a>
-      <a href="/dashboard">Contact</a>
+      <NavEntry path="/dashboard/home" name="Home" top={true}/>
+      <NavEntry path="/dashboard/scheduler" name="Scheduler" />
+      <NavEntry path="/dashboard/settings" name="Settings"/>
+      
+      <ServerStatus />
       <!-- Add more links as necessary -->
     </nav>
   
@@ -25,8 +28,13 @@
       height: 100vh;
       margin: 0; /* Removes default margin */
       padding: 0; /* Removes default padding */
+       
     }
     
+    .nav-container {
+        border-right: 1px solid #D4AF37;
+        padding: 20px 0;
+    }
     .header-img {
       width: 55px;
     }
