@@ -18,7 +18,7 @@
     onMount(() => {
         invoke('check_auth').then((res) => {
             if (res) {
-                goto('/dashboard/home/');
+                goto('/dashboard/home');
             }
             else{
                 authChecked = true;
@@ -42,7 +42,7 @@
                 let stat = await invoke('login', {username: username, password: password});
                 console.log('Login status: ' + stat);
                 if (stat == StatusCodes.OK) {
-                    goto('/dashboard/home/');
+                    goto('/dashboard/home');
                 } else {
                     errorMessage = 'Error: Invalid username or password.';
                 }
