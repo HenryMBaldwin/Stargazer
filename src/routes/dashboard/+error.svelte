@@ -1,15 +1,15 @@
 <div class = "page-container">
-    <img src="/assets/sad_cat.png" alt="sad cat">
+    <img src="/assets/anastasia.png" alt="sad cat">
     <h1>Uh Oh!</h1>
     <p>This feature doesn't exist yet. Stargazer is a work in progress!</p>
 </div>
-
 <style>
     img {
-        width: 100px;
+        width: 200px;
         max-width: 80%;
         height: auto;
-        margin: 20px;}
+        margin: 20px;
+    }
     .page-container {
         display: flex;
         flex-direction: column;
