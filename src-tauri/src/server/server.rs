@@ -9,7 +9,7 @@
 mod orion_api;
 mod json_types;
 mod cache_controller;
-mod credential_manager;
+pub mod credential_manager;
 use reqwest::StatusCode;
 //tokio
 use tokio::net::TcpListener;
@@ -27,6 +27,7 @@ use stargazer::liberror::orion_api_err::*;
 //interprocess
 use interprocess::os::windows::named_pipe::{self, tokio::PipeListenerOptionsExt};
 
+use std::env;
 use std::{
     ffi::OsStr,
     sync::Arc,
@@ -42,8 +43,9 @@ use serde::Deserialize;
 
 #[tokio::main]
 pub async fn main() {
-    
-    let orion_api = Arc::new(OrionAPI::new());
+
+    env::set_var("RUST_BACKTRACE", "1");
+    let orion_api = Arc::new(OrionAPI::new().init().await.expect("Error creating OrionAPI"));
     let cache_controller = Arc::new(CacheController::new().expect("Error creating CacheController"));
     tokio::join!(http_server(orion_api.clone(), cache_controller.clone()),pipe_server(orion_api.clone(), cache_controller.clone()));
         
