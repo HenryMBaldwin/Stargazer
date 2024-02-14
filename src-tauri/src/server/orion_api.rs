@@ -5,7 +5,6 @@ use secstr::*;
 use futures::lock::Mutex;
 use stargazer::liberror::orion_api_err::*;
 use anyhow::{Result};
-use keyring::{Entry};
 pub struct OrionAPI{
     //base API URL
     base_url: String,
@@ -32,14 +31,8 @@ impl OrionAPI{
         }
     }
 
-    //attempt to authenticate using keyring stored credentials
-    // async fn login_with_keyring(&self) -> Result<StatusCode> {
-         
-    // }
     //sets username and password then attempts to authenticate
     pub async fn login(&self, username: &str, password: &str) -> Result<StatusCode>{
-
-        
         {
             let mut username_lock = self.username.lock().await;
             let mut password_lock = self.password.lock().await;
