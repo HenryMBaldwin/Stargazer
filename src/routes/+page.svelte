@@ -18,7 +18,7 @@
     onMount(() => {
         invoke('check_auth').then((res) => {
             if (res) {
-                goto('/dashboard');
+                goto('/dashboard/home/');
             }
             else{
                 authChecked = true;
@@ -42,7 +42,7 @@
                 let stat = await invoke('login', {username: username, password: password});
                 console.log('Login status: ' + stat);
                 if (stat == StatusCodes.OK) {
-                    goto('/dashboard');
+                    goto('/dashboard/home/');
                 } else {
                     errorMessage = 'Error: Invalid username or password.';
                 }
@@ -71,9 +71,9 @@
     }
 
 </script>
-  
+<div class="page">
+{#if authChecked}
 <div class="login-container">
-    {#if authChecked}
     <div class="image-container">
         <!-- svelte-ignore a11y-img-redundant-alt -->
         <img src="/assets/stargazer_black_vert_transparent.png" alt="Login Image">
@@ -96,24 +96,40 @@
                 on:keydown={handlePasswordKeyDown}
                 bind:this={passwordInput}>
             {#if isLoading}
-                <Loader />
+                <div class="loader-container">
+                    <Loader />
+                </div>  
             {:else}
                 <button on:click={loginFunction}>Login</button> <!-- Display button otherwise -->
             {/if}
     </div>
-    {:else}
-        <Loader />
-    {/if}
+</div>
+{:else}
+    <Loader />
+{/if}
 </div>
   
 <style>
-    .login-container {
+    .page {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         padding: 20px;
         height: 100vh;
+        background-color: #f5f5f5;
+    }
+    .login-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: white;
+        padding: 25px;
+        border-radius: 10px;
+        width: 350px;
+        height: 450px;
+        box-shadow: 0 0 10px #ddd;
     }
 
     .image-container img {
@@ -122,9 +138,9 @@
     }
 
     .form-container {
-    display: flex;
-    flex-direction: column;
-    width: 300px;
+        display: flex;
+        flex-direction: column;
+        width: 300px;
     }
 
     .login-input {
@@ -135,18 +151,24 @@
     }
 
     button {
-    padding: 8px 20px;
-    margin: 10px 0;
-    border: none;
-    border-radius: 4px;
-    background-color: #D4AF37;
-    color: rgb(255, 255, 255);
-
-    font-size: large;
-    cursor: pointer;
-    
+        padding: 8.5px 20px;
+        margin: 10px 0;
+        border: none;
+        border-radius: 4px;
+        background-color: #D4AF37;
+        color: rgb(255, 255, 255);
+        font-size: large;
+        cursor: pointer;
+        border: 1px solid;
     }
 
+    .loader-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 18px;
+
+    }
     button:hover {
     background-color: #ac8b1f;
     }
@@ -155,5 +177,6 @@
         color: red;
         font-size: medium;
         margin: 0px 0;
+        height:24px;
     }
 </style>
