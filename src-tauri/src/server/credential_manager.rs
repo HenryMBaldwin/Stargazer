@@ -9,7 +9,7 @@ use anyhow::{Result};
 pub struct CredentialManager {
     username: Mutex<String>,
     service: String,
-    has_credentials: bool,
+    has_credentials: Mutex<bool>,
 }
 
 impl CredentialManager {
@@ -23,14 +23,14 @@ impl CredentialManager {
         Ok(Self {
             username: Mutex::new(username),
             service: service,
-            has_credentials: has_credentials,
+            has_credentials: Mutex::new(has_credentials),
         })
     }
     
     //public functions to get username and password and check for credentials
     pub async fn get_username(&self) -> Option<String> {
         let username=  self.username.lock().await.clone();
-        match username.is_empty() {
+        match !username.is_empty() {
             true => Some(username),
             false => None
         }
@@ -38,19 +38,20 @@ impl CredentialManager {
 
     pub async fn get_password(&self) -> Option<SecStr> {
         let password = Self::get_password_from_keyring(&self.service, &self.username.lock().await.clone()).expect("Error getting password from keyring");
-        match password.unsecure().is_empty() {
+        match !password.unsecure().is_empty() {
             true => Some(password),
             false => None
         }
     }
 
-    pub fn has_credentials(&self) -> bool {
-        self.has_credentials
+    //garuntees that the username and password are Some()
+    pub async fn has_credentials(&self) -> bool {
+        self.has_credentials.lock().await.clone()
     }
 
     //public function to update cached credentials
     //only call this function after the user has been authenticated
-    pub async fn set_username_and_password(&mut self, username: String, password: String) -> Result<()> {
+    pub async fn set_username_and_password(&self, username: String, password: String) -> Result<()> {
         if username.is_empty() || password.is_empty() {
             return Err(anyhow::anyhow!("Error: username or password is empty"));
         }
@@ -62,7 +63,8 @@ impl CredentialManager {
         entry.set_password(&password).expect("Error setting password");
         let mut file = File::create(username_cache_path)?;
         file.write_all(username.as_bytes())?;
-        self.has_credentials = true;
+        *self.has_credentials.lock().await = true;
+
         Ok(())
     }
 
