@@ -4,7 +4,8 @@ use serde_json::Value;
 use secstr::*;
 use futures::lock::Mutex;
 use stargazer::liberror::orion_api_err::*;
-use anyhow::{Result,Error};
+use anyhow::{Result};
+use keyring::{Entry};
 pub struct OrionAPI{
     //base API URL
     base_url: String,
@@ -27,10 +28,14 @@ impl OrionAPI{
             auth_token: Mutex::new(String::new()),
             auth_valid: Mutex::new(false),
             username: Mutex::new(String::new()),
-            password: Mutex::new(SecStr::new("".into()))  
+            password: Mutex::new(SecStr::new("".into()))
         }
     }
 
+    //attempt to authenticate using keyring stored credentials
+    // async fn login_with_keyring(&self) -> Result<StatusCode> {
+         
+    // }
     //sets username and password then attempts to authenticate
     pub async fn login(&self, username: &str, password: &str) -> Result<StatusCode>{
 
@@ -48,8 +53,6 @@ impl OrionAPI{
 
     //attempts to authenticate with Orion using saved username and password
     async fn authenticate(&self) -> Result<StatusCode> {
-        println!("Authenticating");
-        //combine the 
         //url 
         let auth_url =format!("{}security/token", self.base_url);
         //auth client
@@ -75,11 +78,13 @@ impl OrionAPI{
                 *valid = true;
             }
             else {
+                *self.auth_valid.lock().await = false;
                 return Err(AuthError::Unknown(format!("Incorrect json response from Orion: {}", json.to_string())).into());
             }
             Ok(status)
         }
         else {
+            *self.auth_valid.lock().await = false;
             //if authentication was not successful return autherror with status code
             //TODO: implement more granular errors for different statuses
             return Err(AuthError::InavalidLogin(status).into())
