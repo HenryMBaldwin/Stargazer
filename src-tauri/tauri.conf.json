@@ -11,7 +11,11 @@
   },
   "tauri": {
     "allowlist": {
-      "all": false
+      "all": false,
+       "window": {
+        "setResizable": true,
+        "setMaximizable": true
+       }
     },
     "bundle": {
       "active": true,
@@ -58,6 +62,8 @@
         "height": 496,
         "resizable": false,
         "title": "stargazer",
+        "minHeight": 496,
+        "minWidth": 450,
         "width": 910,
         "decorations":true
       }
