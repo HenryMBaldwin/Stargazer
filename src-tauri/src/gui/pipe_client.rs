@@ -66,6 +66,7 @@ pub async fn login(username: String, password: String) -> u16 {
 //checks whether server has a valid login
 #[tauri::command]
 pub async fn check_auth() -> bool {
+    println!("Checking auth");
     let request = serde_json::to_string(&RequestType::CheckAuth(CheckAuthRequest{})).expect("Error: error serializing json.");
     let response = serde_json::from_str::<ResponseType>(&send_wait(&request).await.expect("Error connecting to pipe")).expect("Error deserializing json.");
     match response {
