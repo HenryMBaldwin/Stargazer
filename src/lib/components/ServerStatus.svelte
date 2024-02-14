@@ -1,23 +1,58 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     import Loader from '$lib/components/Loader.svelte'; // Import your Loader component
-	import { invoke } from '@tauri-apps/api';
+    import { invoke } from '@tauri-apps/api';
   
     type ServerStatusType = 'unknown' | 'online' | 'offline';
+    type AuthStatus = 'unknown' | 'authorized' | 'unauthorized';
+    type Status = 'unknown' | 'unauthorized' | 'online' | 'offline';
+
     let serverStatus: ServerStatusType = 'unknown';
-  
+    let authStatus: AuthStatus = 'unknown';
+    let status: Status = 'unknown';
+
+    async function checkStatus(): Promise<void>  {
+      status = 'unknown'; // reset to unknown before checking
+      //determine individual statuses
+      await checkServerStatus();
+      if (serverStatus === 'online') {
+        await checkAuthStatus();
+      }
+
+      //determine overall status
+      if (serverStatus === 'online'){
+        if (authStatus === 'authorized'){
+          status = 'online';
+        }
+        else {
+          status = 'unauthorized';
+        }
+      }
+      else {
+        status = 'offline';
+      }
+    }
     async function checkServerStatus(): Promise<void>  {
       serverStatus = 'unknown'; // reset to unknown before checking
-      invoke('check_alive').then((res) => {
+      await invoke('check_alive').then((res) => {
+        console.log('Server status: ' + res);
         serverStatus = res ? 'online' : 'offline';
       });
     };
-  
+    
+    async function checkAuthStatus(): Promise<void>  {
+      authStatus = 'unknown'; // reset to unknown before checking
+      await invoke('check_auth').then((res) => {
+        authStatus = res ? 'authorized' : 'unauthorized';
+      });
+    };
+
+
     let interval: ReturnType<typeof setInterval>;
   
     onMount(() => {
-      checkServerStatus(); // check immediately on mount
-      interval = setInterval(checkServerStatus, 30000); // and every 30 seconds
+      checkStatus(); // check immediately on mount
+      interval = setInterval(checkStatus, 10000); // and every 30 seconds
     });
   
     onDestroy(() => {
@@ -27,12 +62,12 @@
   
   <div class="server-status">
     Status&nbsp; <span class="gold">|</span>
-    {#if serverStatus === 'unknown'}
+    {#if status === 'unknown'}
       <div class = "loading-indicator">
         <Loader size="10px"/>
       </div>
     {:else}
-      <span class="status-indicator" class:online={serverStatus === 'online'} class:offline={serverStatus === 'offline'}></span>
+      <span class="status-indicator" class:online={status === 'online'} class:unauthorized={status === 'unauthorized'} class:offline={status === 'offline'}></span>
     {/if}
   </div>
   
@@ -79,6 +114,10 @@
     
     .offline {
       background-color: red;
+    }
+
+    .unauthorized {
+      background-color: orange;
     }
     @font-face {
     font-family: 'Aleo';
