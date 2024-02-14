@@ -2,7 +2,7 @@
     <img class="logo" src="/assets/stargazer_black_vert_transparent.png" alt="Logo">
     <div class="text-container">
         <h3>Welcome to Stargazer!</h3>
-        <p> Stargazer is your Orion companion for Excel. Its primary and most basic functionality is pulling Orion query data directly
+        <p> Stargazer is your Excel companion for Orion. Its primary and most basic functionality is pulling Orion query data directly
              into Excel via Excel formulas. It also boasts a multi level caching system, a query scheduler, an Excel file scheduler, as
               well as useful tools for debugging and building sheets to work with Stargazer. </p>
         <h4>Understanding this App</h4>
