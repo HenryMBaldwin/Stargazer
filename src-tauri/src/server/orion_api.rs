@@ -5,6 +5,9 @@ use secstr::*;
 use futures::lock::Mutex;
 use stargazer::liberror::orion_api_err::*;
 use anyhow::{Result};
+//use credential manager
+use crate::credential_manager;
+use credential_manager::CredentialManager;
 pub struct OrionAPI{
     //base API URL
     base_url: String,
@@ -15,7 +18,9 @@ pub struct OrionAPI{
     //username
     username: Mutex<String>,
     //store password in memory
-    password: Mutex<SecVec<u8>>
+    password: Mutex<SecVec<u8>>,
+    //credential manager instance to work with credentials on disk
+    credential_manager: CredentialManager,
 }
 
 impl OrionAPI{
@@ -27,10 +32,24 @@ impl OrionAPI{
             auth_token: Mutex::new(String::new()),
             auth_valid: Mutex::new(false),
             username: Mutex::new(String::new()),
-            password: Mutex::new(SecStr::new("".into()))
+            password: Mutex::new(SecStr::new("".into())),
+            credential_manager: CredentialManager::new().expect("Error creating CredentialManager"),
         }
     }
 
+    //attempts to log in using saved credentials and returns self
+    pub async fn init(self) -> Result<OrionAPI> {
+        //check if there are saved credentials
+        if self.credential_manager.has_credentials().await {
+            //if there are saved credentials then attempt to authenticate
+            //has_credentials() should only return true if both username and password are Some()
+            let username = self.credential_manager.get_username().await.unwrap();
+            let password = self.credential_manager.get_password().await.unwrap();
+
+            self.login(&username, &String::from_utf8(password.unsecure().to_vec()).expect("Error unsecuring string")).await?;
+        }
+        Ok(self)
+    }
     //sets username and password then attempts to authenticate
     pub async fn login(&self, username: &str, password: &str) -> Result<StatusCode>{
         {
@@ -69,6 +88,7 @@ impl OrionAPI{
                 //set auth token to valid
                 let mut valid = self.auth_valid.lock().await;
                 *valid = true;
+                self.credential_manager.set_username_and_password(self.username.lock().await.clone(), String::from_utf8(self.password.lock().await.unsecure().to_vec())?).await?;
             }
             else {
                 *self.auth_valid.lock().await = false;
