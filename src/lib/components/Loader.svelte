@@ -12,7 +12,7 @@
         justify-content: center;
         align-items: center;}
     .loader {
-        border: 4px solid #f3f3f3; /* Light grey */
+        border: 4px solid #f0f0f0; /* Light grey */
         border-top: 4px solid #D4AF37; 
         border-radius: 50%;
         animation: spin 2s linear infinite;
