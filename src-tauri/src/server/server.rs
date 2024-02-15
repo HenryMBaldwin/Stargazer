@@ -9,7 +9,8 @@
 mod orion_api;
 mod json_types;
 mod cache_controller;
-pub mod credential_manager;
+mod credential_manager;
+mod logger;
 use reqwest::StatusCode;
 //tokio
 use tokio::net::TcpListener;
@@ -45,6 +46,7 @@ use serde::Deserialize;
 pub async fn main() {
 
     env::set_var("RUST_BACKTRACE", "1");
+    env::set_var("RUST_LOG", "trace");
     let orion_api = Arc::new(OrionAPI::new().init().await.expect("Error creating OrionAPI"));
     let cache_controller = Arc::new(CacheController::new().expect("Error creating CacheController"));
     tokio::join!(http_server(orion_api.clone(), cache_controller.clone()),pipe_server(orion_api.clone(), cache_controller.clone()));

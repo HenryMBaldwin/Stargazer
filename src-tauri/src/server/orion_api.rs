@@ -1,3 +1,4 @@
+use actix_web::http::header::q;
 use reqwest::{Client, header, StatusCode, Response};
 //use anyhow::{Result, Error, anyhow};
 use serde_json::Value;
@@ -6,8 +7,9 @@ use futures::lock::Mutex;
 use stargazer::liberror::orion_api_err::*;
 use anyhow::{Result};
 //use credential manager
-use crate::credential_manager;
+use crate::{credential_manager, logger};
 use credential_manager::CredentialManager;
+use logger::Logger;
 pub struct OrionAPI{
     //base API URL
     base_url: String,
@@ -21,6 +23,8 @@ pub struct OrionAPI{
     password: Mutex<SecVec<u8>>,
     //credential manager instance to work with credentials on disk
     credential_manager: CredentialManager,
+    //logger, currently only used for query logging
+    logger: Logger,
 }
 
 impl OrionAPI{
@@ -34,6 +38,7 @@ impl OrionAPI{
             username: Mutex::new(String::new()),
             password: Mutex::new(SecStr::new("".into())),
             credential_manager: CredentialManager::new().expect("Error creating CredentialManager"),
+            logger: Logger::new(),
         }
     }
 
@@ -171,6 +176,19 @@ impl OrionAPI{
     pub async fn query(&self, id: String, args: Vec<String>) -> Result<String>{
 
         println!("Starting Query {}", id);
+        
+        //random id for logging purposes
+        let log_id = self.logger.random_id();
+        //logging
+        let mut query_string = format!("{{{},", id);
+        for item in &args {
+            query_string.push_str(&format!("{},", item));
+        }
+        query_string.push_str("}");
+        self.logger.log_query(&format!("[{}] STATUS: RUNNING, QUERY: {}",log_id,  query_string));
+        
+        
+        
         let client = Client::new();
         let query_url = format!("{}Reporting/Custom/{}",self.base_url, id);
         let auth_header = {
@@ -188,6 +206,9 @@ impl OrionAPI{
         let json_string = response.text().await?;
         let mut body: Value = serde_json::from_str(&json_string)?;
 
+        //format query string for logging
+        
+
         if let Some(prompts) = body.get_mut("prompts").and_then(Value::as_array_mut) {
             let mut args_iter = args.iter();
             for prompt in prompts.iter_mut() {
@@ -200,14 +221,18 @@ impl OrionAPI{
                     }
                 }
             }
-    
+            
             // Handle the case where there are more args than prompts
             if args_iter.next().is_some() {
-                return Err(QueryError::TooManyArgs.into());
+                let error = QueryError::TooManyArgs;
+                self.logger.log_query(&format!("{} STATUS: ERROR, ERROR: {}", log_id, error));
+                return Err(error.into());
             }
         }
          else {
-            return Err(QueryError::NoPromptField(json_string).into());
+            let error =QueryError::NoPromptField(json_string).into();
+            self.logger.log_query(&format!("{} STATUS: ERROR, ERROR: {}", log_id, error));
+            return Err(error);
         }
         let query_url = format!("{}/Generate/Table", query_url);
 
@@ -220,11 +245,14 @@ impl OrionAPI{
 
         if post_response.status().is_success() {
             // The POST request was successful
+            self.logger.log_query(&format!("{} STATUS: SUCCESS", log_id));
             let response_body = post_response.text().await?;
             Ok(response_body)
         } else {
             // Handle the case where the POST request was not successful
-            Err(QueryError::PostRequestFailed(post_response.status()).into())
+            let error = QueryError::PostRequestFailed(post_response.status()).into();
+            self.logger.log_query(&format!("{} STATUS: ERROR, ERROR: {}", log_id, error));
+            Err(error)
         }
 
     }
