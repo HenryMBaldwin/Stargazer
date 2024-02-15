@@ -1,10 +1,27 @@
-use std::fs::File;
+use std::{fmt, fs::File};
+use actix_web::web::Query;
 use log::{info, error, warn, debug, trace};
 use simplelog::*;
 use tauri::api::path::cache_dir;
 use chrono::{Local};
 use rand::Rng;
 pub struct Logger;
+
+pub enum QueryStatus {
+    STARTING,
+    SUCCESS,
+    ERROR
+}
+
+impl fmt::Display for QueryStatus {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+       match self {
+              QueryStatus::STARTING => write!(f, "STARTING"),
+              QueryStatus::SUCCESS => write!(f, "SUCCESS"),
+              QueryStatus::ERROR => write!(f, "ERROR")
+       }
+    }
+}
 
 impl Logger {
     pub fn new() -> Logger {
@@ -35,8 +52,9 @@ impl Logger {
         query_log_path.to_str().unwrap().to_string()
     }
 
-    pub fn log_query(&self, query: &str) {
-        info!("{}", query);
+    pub fn log_query(&self, log_id: &str, status: QueryStatus, meta_data: &str) {
+        let log_str = format!("[QUERY] {{id: {}, status: {}, meta-data: {}}}", log_id, status, meta_data);
+        info!("{}", log_str);
     }
 
     //helper function to generate a 10 character unique random id where necassary

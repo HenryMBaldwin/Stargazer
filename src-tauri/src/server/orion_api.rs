@@ -9,7 +9,7 @@ use anyhow::{Result};
 //use credential manager
 use crate::{credential_manager, logger};
 use credential_manager::CredentialManager;
-use logger::Logger;
+use logger::{Logger, QueryStatus};
 pub struct OrionAPI{
     //base API URL
     base_url: String,
@@ -180,12 +180,14 @@ impl OrionAPI{
         //random id for logging purposes
         let log_id = self.logger.random_id();
         //logging
-        let mut query_string = format!("{{{},", id);
+        let mut query_string = format!("{{id:{} args: [", id);
         for item in &args {
             query_string.push_str(&format!("{},", item));
         }
-        query_string.push_str("}");
-        self.logger.log_query(&format!("[{}] STATUS: RUNNING, QUERY: {}",log_id,  query_string));
+        //remove trailing comma
+        query_string.pop();
+        query_string.push_str("]}");
+        self.logger.log_query(log_id.as_str(), QueryStatus::STARTING, &query_string);
         
         
         
@@ -225,14 +227,14 @@ impl OrionAPI{
             // Handle the case where there are more args than prompts
             if args_iter.next().is_some() {
                 let error = QueryError::TooManyArgs;
-                self.logger.log_query(&format!("{} STATUS: ERROR, ERROR: {}", log_id, error));
+                self.logger.log_query(log_id.as_str(),QueryStatus::ERROR,  error.to_string().as_str());
                 return Err(error.into());
             }
         }
          else {
-            let error =QueryError::NoPromptField(json_string).into();
-            self.logger.log_query(&format!("{} STATUS: ERROR, ERROR: {}", log_id, error));
-            return Err(error);
+            let error =QueryError::NoPromptField(json_string);
+            self.logger.log_query(log_id.as_str(),QueryStatus::ERROR,  error.to_string().as_str());
+            return Err(error.into());
         }
         let query_url = format!("{}/Generate/Table", query_url);
 
@@ -245,14 +247,14 @@ impl OrionAPI{
 
         if post_response.status().is_success() {
             // The POST request was successful
-            self.logger.log_query(&format!("{} STATUS: SUCCESS", log_id));
+            self.logger.log_query(log_id.as_str(),QueryStatus::SUCCESS,  "");
             let response_body = post_response.text().await?;
             Ok(response_body)
         } else {
             // Handle the case where the POST request was not successful
-            let error = QueryError::PostRequestFailed(post_response.status()).into();
-            self.logger.log_query(&format!("{} STATUS: ERROR, ERROR: {}", log_id, error));
-            Err(error)
+            let error = QueryError::PostRequestFailed(post_response.status());
+            self.logger.log_query(log_id.as_str(),QueryStatus::ERROR,  error.to_string().as_str());
+            Err(error.into())
         }
 
     }
