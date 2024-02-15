@@ -16,6 +16,7 @@ use anyhow::{Result,Error};
 #[tauri::command]
 pub async fn check_alive() -> bool {
     let request = serde_json::to_string(&RequestType::CheckAlive(CheckAliveRequest{})).expect("Error: error serializing json.");
+    //Should try to start server multiple times, this is jank though so should be revisited
     for n in 1..5 {
         let send = &start_wait(&request).await;
         match send {
