@@ -1,4 +1,4 @@
-use std::{fmt, fs::File};
+use std::{fmt, fs::{File, OpenOptions}};
 use actix_web::web::Query;
 use log::{info, error, warn, debug, trace};
 use simplelog::*;
@@ -28,8 +28,11 @@ impl Logger {
         let _ = WriteLogger::init(
             LevelFilter::Info,
             Config::default(),
-            std::fs::File::create(Self::get_query_log_path()).unwrap(),
-        );
+            OpenOptions::new()
+                    .write(true)   // Enable write mode
+                    .append(true)  // Set the file to append mode, which also prevents truncation
+                    .open(Self::get_query_log_path()).expect("Error opening query log file"),
+                    );
         Self
     }
 
@@ -52,23 +55,11 @@ impl Logger {
         query_log_path.to_str().unwrap().to_string()
     }
 
-    pub fn log_query(&self, log_id: &str, status: QueryStatus, meta_data: &str) {
+    //logs query and returns log string
+    pub fn log_query(&self, log_id: &str, status: QueryStatus, meta_data: &str) -> String {
         let log_str = format!("[QUERY] {{id: {}, status: {}, meta-data: {}}}", log_id, status, meta_data);
         info!("{}", log_str);
+        log_str
     }
 
-    //helper function to generate a 10 character unique random id where necassary
-    pub fn random_id(&self) -> String {
-        let length = 10;
-        let mut rng = rand::thread_rng();
-
-        let mut id = String::with_capacity(length);
-
-        for _ in 0..length {
-            // Generate a random digit and append it to the string
-            id.push_str(&rng.gen_range(0..10).to_string());
-        }
-
-        id
-    }
 }
