@@ -3,7 +3,7 @@
     import type { QueryState } from '$lib/types';
   
      function getColor(status: string) {
-        return status === 'STARTED' ? 'yellow' : status === 'SUCCESS' ? 'green' : 'red';
+        return status === 'STARTED' ? 'lightyellow' : status === 'SUCCESS' ? 'lightgreen' : 'lightred';
     }
   
     // Optional: A function to display metadata
@@ -19,9 +19,17 @@
 </script>
 
 {#each queryArray as query (query.id)}
-  <div style="background-color: {getColor(query.status)}">
+  <div class= "query-entry" style="background-color: {getColor(query.status)}">
     {query.id}
     <!-- Display metadata or other properties -->
   </div>
 {/each}
+
+<style>
+  .query-entry {
+    padding: 10px;
+    margin: 1px;
+    border-radius: 1px;
+  }
+</style>
   
