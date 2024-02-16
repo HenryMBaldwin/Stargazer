@@ -12,7 +12,8 @@
     let interval: ReturnType<typeof setInterval>;
   
     onMount(() => { // check immediately on mount
-        interval = setInterval(getQueryLogs, 1000); // and every !0 seconds
+        getQueryLogs();
+        interval = setInterval(getQueryLogs, 500); // and every !0 seconds
     });
 
     onDestroy(() => {
@@ -22,9 +23,31 @@
 </script>
 
 <div class= "full-container">
-    <QueryList />
+    <h3> Queries </h3>
+    <div class="query-list">   
+        <QueryList />
+    </div>
 </div>
 
 <style>
+    .full-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 10px;
+    }
 
+    .query-list {
+        flex-grow: 1;
+        width: 85%;
+        display: flex;
+        padding: 5px;
+        flex-direction: column;
+        background-color: #fafafa;
+        border-radius: 5px;
+        border: 1px solid #D4AF37;
+    }
 </style>
