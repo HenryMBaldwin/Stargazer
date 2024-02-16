@@ -180,7 +180,7 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
             let query_args:  Vec<String> = query_request.args.clone();
 
             //check if query is cached
-            if cache_controller.query_exists(query_id.clone(), &query_args).unwrap() && false /* Disable caching for testinag purposes */ {
+            if cache_controller.query_exists(query_id.clone(), &query_args).unwrap()  /* && false Disable caching for testinag purposes */ {
                 let result = cache_controller.get_query(query_id.clone(), &query_args).unwrap();
                 let resp = ResponseType::Query(QueryResponse {
                     status: StatusCode::OK.as_u16(),
