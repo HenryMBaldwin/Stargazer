@@ -10,7 +10,7 @@ fn main() {
     .with_menu(tray_menu);
   tauri::Builder::default()
     .system_tray(system_tray)
-    .invoke_handler(tauri::generate_handler![pipe_client::login, pipe_client::check_auth, pipe_client::check_alive])
+    .invoke_handler(tauri::generate_handler![pipe_client::login, pipe_client::check_auth, pipe_client::check_alive, pipe_client::get_query_log])
     .build(tauri::generate_context!())
     .expect("error while running tauri application")
     .run(|_app_handle, event| match event {
