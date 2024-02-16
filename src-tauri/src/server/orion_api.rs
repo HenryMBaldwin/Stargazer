@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use actix_web::http::header::q;
 use reqwest::{Client, header, StatusCode, Response};
 //use anyhow::{Result, Error, anyhow};
@@ -7,9 +9,9 @@ use futures::lock::Mutex;
 use stargazer::liberror::orion_api_err::*;
 use anyhow::{Result};
 //use credential manager
-use crate::{credential_manager, logger};
+use crate::{credential_manager, query_tracker};
 use credential_manager::CredentialManager;
-use logger::{Logger, QueryStatus};
+use query_tracker::{QueryTracker, random_id};
 pub struct OrionAPI{
     //base API URL
     base_url: String,
@@ -23,13 +25,13 @@ pub struct OrionAPI{
     password: Mutex<SecVec<u8>>,
     //credential manager instance to work with credentials on disk
     credential_manager: CredentialManager,
-    //logger, currently only used for query logging
-    logger: Logger,
+    //for tracking query events
+    query_tracker: Arc<Mutex<QueryTracker>>,
 }
 
 impl OrionAPI{
 
-    pub fn new() -> Self {
+    pub fn new(query_tracker: Arc<Mutex<QueryTracker>>) -> Self {
         Self{
             //base API URL
             base_url: String::from("https://api.orionadvisor.com/api/v1/"),
@@ -38,7 +40,7 @@ impl OrionAPI{
             username: Mutex::new(String::new()),
             password: Mutex::new(SecStr::new("".into())),
             credential_manager: CredentialManager::new().expect("Error creating CredentialManager"),
-            logger: Logger::new(),
+            query_tracker,
         }
     }
 
@@ -178,7 +180,7 @@ impl OrionAPI{
         println!("Starting Query {}", id);
         
         //random id for logging purposes
-        let log_id = self.logger.random_id();
+        let log_id = random_id();
         //logging
         let mut query_string = format!("{{id:{} args: [", id);
         for item in &args {
@@ -187,7 +189,7 @@ impl OrionAPI{
         //remove trailing comma
         query_string.pop();
         query_string.push_str("]}");
-        self.logger.log_query(log_id.as_str(), QueryStatus::STARTING, &query_string);
+        self.query_tracker.lock().await.start_query(log_id.as_str(), &query_string);
         
         
         
@@ -208,9 +210,6 @@ impl OrionAPI{
         let json_string = response.text().await?;
         let mut body: Value = serde_json::from_str(&json_string)?;
 
-        //format query string for logging
-        
-
         if let Some(prompts) = body.get_mut("prompts").and_then(Value::as_array_mut) {
             let mut args_iter = args.iter();
             for prompt in prompts.iter_mut() {
@@ -227,13 +226,13 @@ impl OrionAPI{
             // Handle the case where there are more args than prompts
             if args_iter.next().is_some() {
                 let error = QueryError::TooManyArgs;
-                self.logger.log_query(log_id.as_str(),QueryStatus::ERROR,  error.to_string().as_str());
+                self.query_tracker.lock().await.error_query(log_id.as_str(), &error.to_string());
                 return Err(error.into());
             }
         }
          else {
             let error =QueryError::NoPromptField(json_string);
-            self.logger.log_query(log_id.as_str(),QueryStatus::ERROR,  error.to_string().as_str());
+            self.query_tracker.lock().await.error_query(log_id.as_str(), &error.to_string());
             return Err(error.into());
         }
         let query_url = format!("{}/Generate/Table", query_url);
@@ -247,13 +246,13 @@ impl OrionAPI{
 
         if post_response.status().is_success() {
             // The POST request was successful
-            self.logger.log_query(log_id.as_str(),QueryStatus::SUCCESS,  "");
+            self.query_tracker.lock().await.end_query(log_id.as_str(), "Query successful");
             let response_body = post_response.text().await?;
             Ok(response_body)
         } else {
             // Handle the case where the POST request was not successful
             let error = QueryError::PostRequestFailed(post_response.status());
-            self.logger.log_query(log_id.as_str(),QueryStatus::ERROR,  error.to_string().as_str());
+            self.query_tracker.lock().await.error_query(log_id.as_str(), &error.to_string());
             Err(error.into())
         }
 
