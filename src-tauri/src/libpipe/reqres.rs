@@ -29,6 +29,7 @@ pub enum RequestType {
     CheckAuth(CheckAuthRequest),
     Query(QueryRequest),
     GetQueryPrompts(GetQueryPromptsRequest),
+    GetQueryLog(GetQueryLogRequest),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -39,6 +40,7 @@ pub enum ResponseType {
     CheckAuth(CheckAuthResponse),
     Query(QueryResponse),
     GetQueryPrompts(GetQueryPromptsResponse),
+    GetQueryLog(GetQueryLogResponse),
 }
 
 
@@ -101,4 +103,14 @@ pub struct GetQueryPromptsRequest{
 pub struct GetQueryPromptsResponse{
     pub status: u16,
     pub prompts: String,
+}
+
+//get_query_log()
+#[derive(Serialize, Deserialize)]
+pub struct GetQueryLogRequest{}
+
+#[derive(Serialize, Deserialize)]
+pub struct GetQueryLogResponse{
+    pub status: u16,
+    pub log: String,
 }
