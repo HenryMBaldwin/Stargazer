@@ -4,6 +4,7 @@
 // Important: Any functions that communicate with the server must ensure to call check_alive() before attempting to communicate with the server.
 use std::{thread, time};
 use std::env;
+use stargazer::libpipe::reqres::GetQueryLogRequest;
 use tokio::process::Command;
 use std::io::{Write, Read};
 use named_pipe::PipeClient;
@@ -77,7 +78,18 @@ pub async fn check_auth() -> bool {
             false
         }
     }
-}    
+}
+
+#[tauri::command]
+pub async fn get_query_log() -> String {
+    let request = serde_json::to_string(&RequestType::GetQueryLog(GetQueryLogRequest{})).expect("Error: error serializing json.");
+    let response = serde_json::from_str::<ResponseType>(&send_wait(&request).await.expect("Error connecting to pipe")).expect("Error deserializing json.");
+    match response {
+        ResponseType::GetQueryLog(get_query_log) => get_query_log.log,
+        _ => { String::from("{Error: failed to get query log.}") }
+    }
+}
+
 // writes request to named pipe and waits for reponse, for auth_check()
 async fn start_wait(request: &str) -> Result<String> {
     let mut client =  match PipeClient::connect(consts::PIPE_NAME) {
