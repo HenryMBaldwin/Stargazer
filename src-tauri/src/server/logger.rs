@@ -8,7 +8,7 @@ use rand::Rng;
 pub struct Logger;
 
 pub enum QueryStatus {
-    STARTING,
+    STARTED,
     SUCCESS,
     ERROR
 }
@@ -16,7 +16,7 @@ pub enum QueryStatus {
 impl fmt::Display for QueryStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
        match self {
-              QueryStatus::STARTING => write!(f, "STARTING"),
+              QueryStatus::STARTED => write!(f, "STARTED"),
               QueryStatus::SUCCESS => write!(f, "SUCCESS"),
               QueryStatus::ERROR => write!(f, "ERROR")
        }
