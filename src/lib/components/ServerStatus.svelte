@@ -52,7 +52,7 @@
   
     onMount(() => {
       checkStatus(); // check immediately on mount
-      interval = setInterval(checkStatus, 10000); // and every 30 seconds
+      interval = setInterval(checkStatus, 10000); // and every 10 seconds
     });
   
     onDestroy(() => {
