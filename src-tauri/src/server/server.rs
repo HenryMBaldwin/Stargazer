@@ -11,6 +11,9 @@ mod json_types;
 mod cache_controller;
 mod credential_manager;
 mod logger;
+mod query_tracker;
+use futures::lock::Mutex;
+use query_tracker::QueryTracker;
 use reqwest::StatusCode;
 //tokio
 use tokio::net::TcpListener;
@@ -47,21 +50,22 @@ pub async fn main() {
 
     env::set_var("RUST_BACKTRACE", "1");
     env::set_var("RUST_LOG", "trace");
-    let orion_api = Arc::new(OrionAPI::new().init().await.expect("Error creating OrionAPI"));
+    let query_tracker = Arc::new(Mutex::new(query_tracker::QueryTracker::new()));
+    let orion_api = Arc::new(OrionAPI::new(query_tracker.clone()).init().await.expect("Error creating OrionAPI"));
     let cache_controller = Arc::new(CacheController::new().expect("Error creating CacheController"));
-    tokio::join!(http_server(orion_api.clone(), cache_controller.clone()),pipe_server(orion_api.clone(), cache_controller.clone()));
+    tokio::join!(http_server(orion_api.clone(), cache_controller.clone(), query_tracker.clone()),pipe_server(orion_api.clone(), cache_controller.clone(), query_tracker.clone()));
         
 }
 
 
 //http server
-async fn http_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheController>)  {
+async fn http_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheController>, query_tracker: Arc<Mutex<QueryTracker>>)  {
    
 
     // Handler function for the web service
-    async fn process_request(body: web::Bytes, orion_api: web::Data<Arc<OrionAPI>>, cache_controller: web::Data<Arc<CacheController>>) -> impl Responder {
+    async fn process_request(body: web::Bytes, orion_api: web::Data<Arc<OrionAPI>>, cache_controller: web::Data<Arc<CacheController>>, query_tracker: web::Data<Arc<Mutex<QueryTracker>>> /* This is so cursed */) -> impl Responder {
         let request = String::from_utf8(body.to_vec()).unwrap();
-        let response = handle_request(&request, orion_api.get_ref().clone(), cache_controller.get_ref().clone()).await;
+        let response = handle_request(&request, orion_api.get_ref().clone(), cache_controller.get_ref().clone(), query_tracker.get_ref().clone()).await;
         HttpResponse::Ok().content_type("application/json").body(response)
     }
 
@@ -79,6 +83,7 @@ async fn http_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheContro
         )
             .app_data(web::Data::new(orion_api.clone()))
             .app_data(web::Data::new(cache_controller.clone()))
+            .app_data(web::Data::new(query_tracker.clone()))
             .route("/process", web::post().to(process_request))
     })
     .bind("127.0.0.1:4200").expect("error binding.")
@@ -87,7 +92,7 @@ async fn http_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheContro
 }
 
 //pipe server
-async fn pipe_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheController>) {
+async fn pipe_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheController>, query_tracker: Arc<Mutex<QueryTracker>>) {
     //create PipeListener
     let listener: named_pipe::tokio::PipeListener<_> = named_pipe::PipeListenerOptions::new()
     .name(Cow::from(OsStr::new(consts::PIPE_NAME_SERVER)))
@@ -100,7 +105,7 @@ async fn pipe_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheContro
 
         let orion_api_clone = orion_api.clone();
         let db_controller_clone = cache_controller.clone();
-        
+        let query_tracker_clone = query_tracker.clone();
         //blocks until connection is made
         let connection = listener.accept().await.expect("Error accepting connection");
         println!("Connection accepted");
@@ -108,7 +113,7 @@ async fn pipe_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheContro
             let (mut reader, mut writer) = connection.split();
             let mut buffer = vec![0; 1024];
             let read = reader.read(&mut buffer).await.expect("Error couldn't read string");
-            let response = handle_request(&String::from_utf8_lossy(&buffer[..read]).to_string(), orion_api_clone, db_controller_clone).await;
+            let response = handle_request(&String::from_utf8_lossy(&buffer[..read]).to_string(), orion_api_clone, db_controller_clone, query_tracker_clone).await;
 
             writer.write_all(response.as_bytes()).await.expect("Error Writing");
             writer.close().await.expect("Error closing the writer!");
@@ -119,7 +124,7 @@ async fn pipe_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheContro
 }
 
 //handles requests, agnostic of whether they come from http or pipe server
-async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheController>) -> String{
+async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheController>, query_tracker: Arc<Mutex<QueryTracker>>) -> String{
     println!("Handling request: {}", request);
     //Handle request to Orion API
     match serde_json::from_str::<RequestType>(request) {
@@ -175,7 +180,7 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
             let query_args:  Vec<String> = query_request.args.clone();
 
             //check if query is cached
-            if cache_controller.query_exists(query_id.clone(), &query_args).unwrap() {
+            if cache_controller.query_exists(query_id.clone(), &query_args).unwrap() && false /* Disable caching for testinag purposes */ {
                 let result = cache_controller.get_query(query_id.clone(), &query_args).unwrap();
                 let resp = ResponseType::Query(QueryResponse {
                     status: StatusCode::OK.as_u16(),
@@ -220,6 +225,26 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
                     let resp = ResponseType::GetQueryPrompts(GetQueryPromptsResponse {
                         status: StatusCode::UNAUTHORIZED.as_u16(),
                         prompts: String::from(format!("Error: {}",e)),
+                    });
+                    serde_json::to_string(&resp).unwrap()
+                }
+            }
+        },
+        //GetQueryLog request
+        Ok(RequestType::GetQueryLog(get_query_log_request)) => {
+            let result = query_tracker.lock().await.get_query_log();
+            match result {
+                Ok(log) =>  {
+                    let resp = ResponseType::GetQueryLog(GetQueryLogResponse {
+                        status: StatusCode::OK.as_u16(),
+                        log: log,
+                    });
+                    serde_json::to_string(&resp).unwrap()
+                }
+                Err(e) => {
+                    let resp = ResponseType::GetQueryLog(GetQueryLogResponse {
+                        status: StatusCode::UNAUTHORIZED.as_u16(),
+                        log: String::from(format!("Error: {}",e)),
                     });
                     serde_json::to_string(&resp).unwrap()
                 }
