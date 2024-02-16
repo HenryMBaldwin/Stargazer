@@ -3,13 +3,7 @@ import { updateQueryState } from './stores';
 
 function parseLog(log: string): QueryEvent[] {
     const cleaned_log = log.replace(/\\/g, "");
-    console.log('Parsing log:', log)
-    const query_events: QueryEvent[] = JSON.parse(cleaned_log); 
-    console.log('Parsed log:', query_events);
-    //iterate through each query event and log its id
-    query_events.forEach(event => {
-        console.log('Query event id:', event.id);
-    });
+    const query_events = JSON.parse(cleaned_log)
     return query_events// Replace with appropriate parsing logic
 }
 
