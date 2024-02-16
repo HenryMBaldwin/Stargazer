@@ -3,10 +3,19 @@ import type { QueryState, QueryEvent } from './types';
 
 const queries = writable<Record<string, QueryState>>({});
 
+
 function updateQueryState(event: QueryEvent): void {
-  queries.update(currentQueries => {
-    const { id, status, metadata } = event;
-    currentQueries[id] = { ...currentQueries[id], status, metadata };
+  //check and see if the query is already in the store with the same status
+  
+  queries.update((currentQueries) => {
+    const query = currentQueries[event.id];
+    if (!query || query.status !== event.status) {
+      currentQueries[event.id] = {
+        id: event.id,
+        status: event.status,
+        metadata: event.metadata,
+      };
+    }
     return currentQueries;
   });
 }
