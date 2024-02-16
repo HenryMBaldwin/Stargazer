@@ -1,5 +1,6 @@
 use std::{fs::File, io::{BufRead, BufReader}};
 use rand::Rng;
+use serde_json::Value;
 use crate::logger::{Logger, QueryStatus};
 use anyhow::Result;
 
@@ -22,7 +23,7 @@ impl QueryTracker {
 
     //public functions to save query into internal query_log and log it
     pub fn start_query(&mut self, log_id: &str, meta_data: &str) -> (){
-        let log_str = self.logger.log_query(log_id, QueryStatus::STARTING, meta_data);
+        let log_str = self.logger.log_query(log_id, QueryStatus::STARTED, meta_data);
         self.query_log.push(log_str);
     }
     
@@ -37,7 +38,15 @@ impl QueryTracker {
     }
     //returns the query log as a json array
     pub fn get_query_log(&self) -> Result<String> {
-        Ok(serde_json::to_string(&self.query_log).unwrap())
+        let mut json_vec: Vec<Value> = Vec::new();
+
+        for log_entry in &self.query_log {
+            let json_entry: Value = serde_json::from_str(log_entry)?;
+            json_vec.push(json_entry);
+        }
+
+        let log = serde_json::to_string(&json_vec)?;
+        Ok(log)
     }
 
     //populates query log 
