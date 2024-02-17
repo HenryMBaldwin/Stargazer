@@ -84,6 +84,7 @@ pub struct CheckAuthResponse{
 #[derive(Serialize, Deserialize)]
 pub struct QueryRequest{
     pub id: String,
+    pub cache: bool,
     pub args: Vec<String>,
 }
 
