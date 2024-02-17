@@ -182,16 +182,16 @@ impl OrionAPI{
         //random id for logging purposes
         let log_id = random_id();
         //logging
-        // let mut query_string = format!("{{\"id\":\"{}\", \"args\": [", id);
-        // for item in &args {
-        //     query_string.push_str(&format!("\"{}\",", item));
-        // }
+        let mut query_string = format!("{{\"id\":\"{}\", \"args\": [", id);
+        for item in &args {
+            query_string.push_str(&format!("\"{}\",", item));
+        }
 
         
         //remove trailing comma
-        // query_string.pop();
-        // query_string.push_str("]}");
-        self.query_tracker.lock().await.start_query(log_id.as_str(), "");
+        query_string.pop();
+        query_string.push_str("]}");
+        self.query_tracker.lock().await.start_query(log_id.as_str(), &query_string);
         
         
         

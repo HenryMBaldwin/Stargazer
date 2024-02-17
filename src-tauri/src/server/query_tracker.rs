@@ -23,25 +23,32 @@ impl QueryTracker {
 
     //public functions to save query into internal query_log and log it
     pub fn start_query(&mut self, log_id: &str, meta_data: &str) -> (){
-        let log_str = self.logger.log_query(log_id, QueryStatus::STARTED, meta_data);
+        let log_str = self.logger.log_query(log_id, QueryStatus::STARTED, &meta_data);
         self.query_log.push(log_str);
     }
     
     pub fn end_query(&mut self, log_id: &str, meta_data: &str) -> (){
-        let log_str = self.logger.log_query(log_id, QueryStatus::SUCCESS, meta_data);
+        let log_str = self.logger.log_query(log_id, QueryStatus::SUCCESS, format!("\"{}\"", meta_data).as_str());
         self.query_log.push(log_str);
     }
 
     pub fn error_query(&mut self, log_id: &str, meta_data: &str) -> (){
-        let log_str = self.logger.log_query(log_id, QueryStatus::ERROR, meta_data);
+        let log_str = self.logger.log_query(log_id, QueryStatus::ERROR, format!("\"{}\"", meta_data).as_str());
         self.query_log.push(log_str);
     }
     //returns the query log as a json array
     pub fn get_query_log(&self) -> Result<String> {
         let mut json_vec: Vec<Value> = Vec::new();
 
+        
         for log_entry in &self.query_log {
-            let json_entry: Value = serde_json::from_str(log_entry)?;
+            let json_entry: Value = match serde_json::from_str(log_entry) {
+                Ok(json_entry) => json_entry,
+                Err(e) => {
+                    println!("Error deserializing query log entry. Log entry: {} Error: {}", log_entry, e);
+                    Value::from("")
+                }
+            };
             json_vec.push(json_entry);
         }
 

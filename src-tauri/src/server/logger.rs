@@ -57,7 +57,9 @@ impl Logger {
 
     //logs query and returns log string
     pub fn log_query(&self, log_id: &str, status: QueryStatus, meta_data: &str) -> String {
-        let log_str = format!("{{\"id\": \"{}\", \"status\": \"{}\", \"meta-data\": \"{}\"}}", log_id, status, meta_data);
+        //ensure log exists
+        Self::get_query_log_path();
+        let log_str = format!("{{\"id\": \"{}\", \"status\": \"{}\", \"metadata\": {}}}", log_id, status, meta_data);
         info!("[QUERY]{}", log_str);
         log_str
     }
