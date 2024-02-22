@@ -61,9 +61,14 @@ impl Logger {
     pub fn log_query(&self, log_id: &str, status: QueryStatus, meta_data: &str) -> String {
         //ensure log exists
         Self::get_query_log_path();
-        let log_str = format!("{{\"id\": \"{}\", \"status\": \"{}\", \"metadata\": {}}}", log_id, status, meta_data);
+        let log_str = format!("{{\"id\": \"{}\", \"timestamp\": \"{}\",  \"status\": \"{}\", \"metadata\": {}}}", log_id, Self::generate_timestamp(), status, meta_data);
         info!("[QUERY]{}", log_str);
         log_str
+    }
+
+    fn generate_timestamp() -> String {
+        let date = Local::now();
+        date.format("%H:%M:%S").to_string()
     }
 
 }
