@@ -1,6 +1,6 @@
 <script lang="ts">
   import { queries } from '$lib/stores';
-  import type { QueryState, StartedMetadata } from '$lib/types';
+  import type { ErrorMetadata, QueryEvent, QueryState, StartedMetadata, SuccessMetadata } from '$lib/types';
   import { flip } from 'svelte/animate';
   import { FontAwesomeIcon } from '@fortawesome/svelte-fontawesome';
   import { faCaretRight, faCaretDown } from '@fortawesome/free-solid-svg-icons';
@@ -16,7 +16,7 @@
     return JSON.stringify(metadata);
   }
 
-  function getMetadata(metadata: StartedMetadata | string): StartedMetadata {
+  function getMetadata(metadata: StartedMetadata | ErrorMetadata | SuccessMetadata): StartedMetadata {
     if (typeof metadata === 'object' && 'id' in metadata) {
       return metadata
     } else {
@@ -25,7 +25,26 @@
     }
   }
 
-  $: queryArray = $queries ? Object.values($queries) : [];
+  function getQueryId(query: QueryState): string {
+    let ret = "";
+    query.events.forEach(event => {
+      if (event.status === 'STARTED') {
+        ret = getMetadata(event.metadata).id;
+      }
+    });
+    return ret;
+  }
+
+  function getEvents(query: QueryState): QueryEvent[] {
+    return query.events;
+  }
+
+  function getTimestamp(timestamp: string): string {
+    //get only the first 8 characters of the timestamp to cut off random id
+    return timestamp.substring(0, 8);
+  }
+
+  $: queryArray = $queries ? Object.values($queries).sort((a, b) => a.timestamp.localeCompare(b.timestamp)) : [];
   $: queryArray.forEach(query => {
     if (!(query.id in detailsVisible)) {
       detailsVisible[query.id] = false;
@@ -37,7 +56,7 @@
   }
 </script>
 
-{#each queryArray as query (query.id)}
+{#each queryArray as query (query.timestamp)}
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="query-entry" style="background-color: {getColor(query.status)}" on:click={() => toggleDetails(query.id)}>
@@ -46,13 +65,15 @@
     {:else}
       <FontAwesomeIcon icon={faCaretRight} />
     {/if}
-    <span class="query-text">{getMetadata(query.metadata).id}</span>
+    <span class="query-text">[{getTimestamp(query.timestamp)}]</span>
+    <span class="query-text">{getQueryId(query)}</span>
+    
     
   </div>
   {#if detailsVisible[query.id]}
     <div class="query-details">
-      {#each getMetadata(query.metadata).args as arg}
-        <span class="query-detail">{arg}</span>
+      {#each getEvents(query) as event (event.timestamp)}
+        <div class="query-detail">{event.timestamp}: {event.status}</div>
       {/each}
     </div>
   {/if}
@@ -91,5 +112,14 @@
   margin: 1px;
   padding: 1px;
   background-color: #f0f0f0;
+}
+
+.query-event-entry {
+  padding: 5px;
+  margin-top: 1px;
+  border-radius: 1px;
+  height: auto;
+  display: flex;
+  align-items: center;
 }
 </style>

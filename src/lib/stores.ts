@@ -9,21 +9,24 @@ function updateQueryState(event: QueryEvent): void {
   queries.update((currentQueries) => {
     const existingQuery = currentQueries[event.id];
 
+    
     // If the query doesn't exist or its status has changed
-    if (!existingQuery || existingQuery.status !== event.status) {
-      // Use query.metadata if query exists, otherwise use event.metadata
-
-      const metadata = existingQuery ? existingQuery.metadata : event.metadata;
-      
+    if (!existingQuery) {
       currentQueries[event.id] = {
         id: event.id,
+        timestamp: event.timestamp, //concatenate with random string to avoid duplicates
         status: event.status,
-        metadata: metadata
+        events: [event],
       };
+    } else if(existingQuery.status !== event.status && existingQuery.status === 'STARTED') {
+        existingQuery.status = event.status;
+        existingQuery.events.push(event);
     }
-
+    //console.log(currentQueries);
     return currentQueries;
   });
 }
+
+
 
 export { queries, updateQueryState };
