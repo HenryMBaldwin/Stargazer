@@ -188,8 +188,10 @@ impl OrionAPI{
         }
 
         
-        //remove trailing comma
-        query_string.pop();
+        //remove trailing comma if there were args
+        if args.len() > 0 {
+            query_string.pop();
+        }
         query_string.push_str("]}");
         self.query_tracker.lock().await.start_query(log_id.as_str(), &query_string);
         
