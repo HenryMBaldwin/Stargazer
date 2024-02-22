@@ -118,7 +118,7 @@ async fn send_wait(request: &str) -> Result<String> {
         }
     };
     client.write(request.as_bytes()).expect("Error: client failed to write to pipe.");
-    let mut response = vec![0; 1024];
+    let mut response = vec![0; 1024000];
     let size = client.read(&mut response).expect("Error: client failed to read from pipe.");
     Ok(String::from_utf8(response[..size].to_vec()).expect("Error converting response to string."))
 }
