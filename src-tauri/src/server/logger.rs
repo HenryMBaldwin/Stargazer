@@ -27,7 +27,9 @@ impl Logger {
     pub fn new() -> Logger {
         let _ = WriteLogger::init(
             LevelFilter::Info,
-            Config::default(),
+            ConfigBuilder::new()
+                    .set_time_offset_to_local().expect("Error setting time offset on logger.")
+                    .build(),
             OpenOptions::new()
                     .write(true)   // Enable write mode
                     .append(true)  // Set the file to append mode, which also prevents truncation
