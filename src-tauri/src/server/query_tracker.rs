@@ -36,6 +36,7 @@ impl QueryTracker {
         let log_str = self.logger.log_query(log_id, QueryStatus::ERROR, format!("\"{}\"", meta_data).as_str());
         self.query_log.push(log_str);
     }
+
     //returns the query log as a json array
     pub fn get_query_log(&self) -> Result<String> {
         let mut json_vec: Vec<Value> = Vec::new();
@@ -67,6 +68,7 @@ impl QueryTracker {
         for line in reader.lines() {
             let line = line.unwrap();
             if line.contains("[QUERY]") {
+
                 if let (Some(start), Some(end)) = (line.find('{'), line.rfind('}')) {
                     results.push(line[start..=end].to_string());
                 }
