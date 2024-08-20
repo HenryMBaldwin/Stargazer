@@ -2,11 +2,10 @@
 // Description: provides simple functions that mirror orion_apis to simplify the process of calling through the named pipes.
 // Important: Any functions in the orion_api in the server must be reflected here for the gui to have access to them.  
 // Important: Any functions that communicate with the server must ensure to call check_alive() before attempting to communicate with the server.
-use std::{thread, time};
 use std::env;
 use stargazer::libpipe::reqres::GetQueryLogRequest;
 use tokio::process::Command;
-use std::io::{Write, Read};
+use std::io::{Read, Write};
 use named_pipe::PipeClient;
 use stargazer::libpipe::{reqres::{ RequestType, LoginRequest, ResponseType, CheckAuthRequest, CheckAliveRequest}, consts};
 use reqwest::StatusCode;
@@ -18,24 +17,18 @@ use anyhow::{Result,Error};
 pub async fn check_alive() -> bool {
     let request = serde_json::to_string(&RequestType::CheckAlive(CheckAliveRequest{})).expect("Error: error serializing json.");
     //Should try to start server multiple times, this is jank though so should be revisited
-    for n in 1..5 {
-        let send = &start_wait(&request).await;
-        match send {
-            Ok(_) => return true,
-            Err(_) => {
-                match start_server().await {
-                    Ok(_) => {
-                        thread::sleep(time::Duration::from_secs(2));
-                    }
-                    Err(e) => {
-                        println!("Error: {}", e);
-                        return false
-                    }
-                }
+
+    let send = &start_wait(&request).await;
+    match send {
+        Ok(_) => return true,
+        Err(_) => {
+            let status = start_server().await;
+            match status {
+                Ok(_) => return true,
+                Err(_) => return false
             }
         }
     }
-    false
 }
 
 pub async fn start_server() -> Result<()> {
@@ -43,9 +36,24 @@ pub async fn start_server() -> Result<()> {
     exe_path.pop();
     let other_exe_path = exe_path.join("server.exe");
     
-    let output = Command::new(other_exe_path)
+    Command::new(other_exe_path)
         .spawn()?;
-    Ok(())
+    
+    //Try 6 times to start it, waiting 5 seconds inbetween.
+    //This seems to work alright should likely be revisited
+    for _i in 0..6 {
+        let send = &start_wait(&serde_json::to_string(&RequestType::CheckAlive(CheckAliveRequest{})).expect("Error: error serializing json")).await;
+        match send {
+            Ok(_) => {
+                return Ok(());
+            }
+            Err(_) => {
+                println!("Client: Server not started, waiting 5 seconds.");
+                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            }
+        }
+    }
+    Err(Error::msg("Server could not be started"))
 }
 //takes in username and password to auth oapi
 #[tauri::command]
@@ -68,6 +76,7 @@ pub async fn login(username: String, password: String) -> u16 {
 //checks whether server has a valid login
 #[tauri::command]
 pub async fn check_auth() -> bool {
+    check_alive().await;
     let request = serde_json::to_string(&RequestType::CheckAuth(CheckAuthRequest{})).expect("Error: error serializing json.");
     let response = serde_json::from_str::<ResponseType>(&send_wait(&request).await.expect("Error connecting to pipe")).expect("Error deserializing json.");
     match response {
@@ -89,7 +98,7 @@ pub async fn get_query_log() -> String {
     }
 }
 
-// writes request to named pipe and waits for reponse, for auth_check()
+// writes request to named pipe and waits for reponse, for check_alive()
 async fn start_wait(request: &str) -> Result<String> {
     let mut client =  match PipeClient::connect(consts::PIPE_NAME) {
         Ok(client) => client,
@@ -117,8 +126,8 @@ async fn send_wait(request: &str) -> Result<String> {
             return Err(Error::new(e));
         }
     };
-    client.write(request.as_bytes()).expect("Error: client failed to write to pipe.");
-    let mut response = vec![0; 1024000];
+    client.write(&request.as_bytes()).expect("Error: client failed to write to pipe.");
+    let mut response = vec![0; 1024];
     let size = client.read(&mut response).expect("Error: client failed to read from pipe.");
     Ok(String::from_utf8(response[..size].to_vec()).expect("Error converting response to string."))
 }
