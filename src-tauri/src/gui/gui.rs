@@ -1,17 +1,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use tauri::{
-  menu::{MenuBuilder, MenuItemBuilder},
-  tray::{
+  image::Image, include_image, menu::{MenuBuilder, MenuItemBuilder}, tray::{
     MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent
-  },
-  Manager,
-  WindowEvent
+  }, Manager, WindowEvent
 };
 use stargazer::libinstance::instance::{ClientInstance, generate_id};
 use chrono::Utc;
 mod pipe_client;
 
-
+const TRAY_ICON: Image<'_> = include_image!("./icons/icon.ico");
 fn main() {
   //client instance representing this client
   let client = ClientInstance {
@@ -21,12 +18,19 @@ fn main() {
   };
 
   tauri::Builder::default()
+    .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
+            let webview_window = app.get_webview_window("main").unwrap();
+            let _ = webview_window.show();
+            if webview_window.is_minimized().unwrap() {
+              let _ = webview_window.unminimize();
+            }
+            let _ = webview_window.set_focus();
+    }))
     .manage(client)
     .setup(|app| {
 
       let hide_item = MenuItemBuilder::with_id("hide", "Hide").build(app)?;
       let show_item = MenuItemBuilder::with_id("show", "Show").build(app)?;
-      let icon = tauri::image::Image::from_path("icons/icon.ico").unwrap();
       //system tray and menu
       let menu = MenuBuilder::new(app)
         .items(&[&hide_item, &show_item])
@@ -34,7 +38,8 @@ fn main() {
         .quit()
         .build()?;
       let tray = TrayIconBuilder::new()
-        .icon(icon)
+        .icon(TRAY_ICON)
+        .tooltip("Stargazer")
         .menu(&menu)
         .on_menu_event(move |app, event| match event.id().as_ref() {
           "hide" => {
