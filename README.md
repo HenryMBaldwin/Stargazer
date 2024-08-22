@@ -1,2 +1,8 @@
 # Orion_API_Stargazer
-A client for Orion Advisors Query API. Used for downloading, managing, storing, and organizing Orion Advisory Query data. Written primarily as a tool to cache query data for use in Excel Add-ins.
+Middleware for Orion Advisors Querying API. Provides a fully permissioned local API and caching layer that can be used to supplement direct query calls and significantly optimize data flow.
+
+Roadmap:
+
+- Fix query statuses
+- Query scheduler to automatically cache data on a schedule
+- official release with documentation
