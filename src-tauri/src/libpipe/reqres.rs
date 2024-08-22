@@ -5,6 +5,8 @@
 use serde;
 use serde::{Serialize, Deserialize};
 
+use crate::libinstance::instance::ClientInstance;
+
 
 //this file will define structs for calls/responses to/from OrionAPI through the named pipe
 //this should be used by both client and server to ensure that communication is consistant on both ends
@@ -48,12 +50,23 @@ pub enum ResponseType {
 
 //struct response
 
+//phone_home()
+#[derive(Serialize, Deserialize)]
+pub struct PhoneHomeRequest{
+    pub client: ClientInstance,
+}
+
+pub struct PhoneHomeResponse{
+    pub status: bool,
+}
+
 //check_alive()
 #[derive(Serialize, Deserialize)]
 pub struct CheckAliveRequest{}
 
 #[derive(Serialize, Deserialize)]
 pub struct CheckAliveResponse{
+    //obviously this will always be true if the server is alive
     pub status: bool
 }
 
