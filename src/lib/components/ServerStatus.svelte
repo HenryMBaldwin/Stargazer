@@ -2,7 +2,7 @@
     import { onMount, onDestroy } from 'svelte';
     import Loader from '$lib/components/Loader.svelte'; // Import your Loader component
     import { invoke } from '@tauri-apps/api';
-  
+
     type ServerStatusType = 'unknown' | 'online' | 'offline';
     type AuthStatus = 'unknown' | 'authorized' | 'unauthorized';
     type Status = 'unknown' | 'unauthorized' | 'online' | 'offline';
@@ -52,13 +52,14 @@
   
     onMount(() => {
       checkStatus(); // check immediately on mount
-      interval = setInterval(checkStatus, 10000); // and every 10 seconds
+      interval = setInterval(checkStatus, 1000); // and every 1 second
     });
   
     onDestroy(() => {
       clearInterval(interval); // cleanup the interval when the component is unmounted
     });
   </script>
+  
   
   <div class="server-status">
     Status&nbsp; <span class="gold">|</span>
