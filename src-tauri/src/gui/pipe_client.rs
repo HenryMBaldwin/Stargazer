@@ -23,10 +23,10 @@ pub async fn register(){
 //returns true if this client should stay alive
 //returns false if this client should kill itself
 //no expectations of a living server here
-#[tauri::command]
-pub async fn phone_home() -> Result<bool,()> {
-    Ok(true)
-}
+// #[tauri::command]
+// pub async fn phone_home() -> Result<bool,()> {
+//     Ok(true)
+// }
 //checks if the server is alive and starts it if it isn't
 #[tauri::command]
 pub async fn check_alive() -> bool {

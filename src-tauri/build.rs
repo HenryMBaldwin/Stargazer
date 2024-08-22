@@ -9,7 +9,7 @@ fn main() {
   let config: serde_json::Value = serde_json::from_str(&config_str)
         .expect("Failed to parse tauri.conf.json");
 
-  let version_str = config["package"]["version"].as_str()
+  let version_str = config["version"].as_str()
         .expect("Failed to get version from tauri.conf.json");
 
   let version: String = version_str.chars().filter(|c| c.is_digit(10)).collect();

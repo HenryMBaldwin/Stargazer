@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {invoke} from '@tauri-apps/api';
+    import {invoke} from '@tauri-apps/api/core';
     import {processLog} from '$lib/logProcessor';
     import { onMount, onDestroy} from 'svelte';
     import QueryList from '$lib/components/QueryList.svelte';

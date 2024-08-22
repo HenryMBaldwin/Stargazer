@@ -1,11 +1,11 @@
-use std::{fs::{self, File}, io::{self, BufRead, Write}, path::{Path, PathBuf}};
-
 //manages saving and retrieving credentials from the system
+use std::{fs::{self, File}, io::{self, BufRead, Write}, path::{Path, PathBuf}};
 use secstr::*;
 use keyring::Entry;
 use futures::lock::Mutex;
-use tauri::api::path::data_dir;
+use dirs_next::data_dir;
 use anyhow::{Result};
+
 pub struct CredentialManager {
     username: Mutex<String>,
     service: String,

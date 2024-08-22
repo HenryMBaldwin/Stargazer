@@ -2,7 +2,7 @@ use std::{fmt, fs::{File, OpenOptions}};
 use actix_web::web::Query;
 use log::{info, error, warn, debug, trace};
 use simplelog::*;
-use tauri::api::path::cache_dir;
+use dirs_next::cache_dir;
 use chrono::{Local};
 use rand::Rng;
 pub struct Logger;

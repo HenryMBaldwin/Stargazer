@@ -20,13 +20,13 @@ path = "src/server/server.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "1.5.1", features = [] }
+tauri-build = { version = "2.0.0-rc", features = [] }
 serde_json = "1.0"
 
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.5.4", features = [ "system-tray", "window-set-maximizable", "window-set-resizable"] }
+tauri = { version = "2.0.0-rc", features = ["tray-icon"] }
 thiserror = "1.0.56"
 reqwest = {version = "0.11.22", features = ["json"] }
 r2d2 = "0.8.10"
@@ -48,7 +48,8 @@ log = "0.4.20"
 chrono = {version = "0.4.34", features = ["serde"] }
 rand = "0.8.5"
 clokwerk = "0.4.0"
-uuid = {version = "1.10.0", features = ["v4"]}
+uuid = {version = "1.10.0", features = ["v4"] }
+dirs-next = "2.0.0"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

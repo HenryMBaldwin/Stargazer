@@ -1,6 +1,6 @@
 <script>
     import { goto } from '$app/navigation';
-    import {invoke} from '@tauri-apps/api/tauri';
+    import {invoke} from '@tauri-apps/api/core';
     import {StatusCodes} from 'http-status-codes';
     import {onMount} from 'svelte';
     import Loader from '$lib/components/Loader.svelte';

@@ -2,8 +2,9 @@
     import ServerStatus from "$lib/components/ServerStatus.svelte";
     import NavEntry from "$lib/components/NavEntry.svelte";
     import { onMount } from "svelte";
-    import { appWindow } from "@tauri-apps/api/window";
+    import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 	import { app } from "@tauri-apps/api";
+const appWindow = getCurrentWebviewWindow()
 
     onMount(() => {
         appWindow.setResizable(true);

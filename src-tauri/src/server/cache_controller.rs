@@ -4,9 +4,9 @@ use sha2::{Sha256, Digest};
 use anyhow::Result;
 use serde_json::{Value, Map};
 use stargazer::liberror::cache_controller_err::*;
-use std::path::Path;
 use std::fs::{self, File};
-use tauri::api::path::cache_dir;
+use dirs_next::cache_dir;
+
 pub struct CacheController {
     pool: Pool<SqliteConnectionManager>,
 }
