@@ -5,13 +5,17 @@
 /// Any functions that need to be exposed to either  must be added here and in the pipe_client.rs file in the gui.
 
 
-//orion api
+//mod
 mod orion_api;
 mod json_types;
 mod cache_controller;
 mod credential_manager;
 mod logger;
 mod query_tracker;
+mod query_scheduler;
+mod query_job_cache_controller;
+mod instance_manager;
+
 use futures::lock::Mutex;
 use query_tracker::QueryTracker;
 use reqwest::StatusCode;
@@ -98,17 +102,14 @@ async fn pipe_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheContro
     .name(Cow::from(OsStr::new(consts::PIPE_NAME_SERVER)))
     .mode(named_pipe::PipeMode::Bytes)
     .create_tokio::<named_pipe::tokio::DuplexBytePipeStream>().expect("Error creating pipe");
-
+    println!("Starting up pipe server");
     loop {
-        
-        
-
         let orion_api_clone = orion_api.clone();
         let db_controller_clone = cache_controller.clone();
         let query_tracker_clone = query_tracker.clone();
         //blocks until connection is made
         let connection = listener.accept().await.expect("Error accepting connection");
-        println!("Connection accepted");
+        println!("Pipe Server: Connection accepted");
         tokio::spawn(async move {
             let (mut reader, mut writer) = connection.split();
             let mut buffer = vec![0; 1024];
@@ -161,12 +162,14 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
             let result = orion_api.check_auth().await;
             match result {
                 true =>  {
+                    println!("Auth success");
                     let resp = ResponseType::CheckAuth(CheckAuthResponse {
                         result: true,
                     });
                     serde_json::to_string(&resp).unwrap()
                 }
                 false => {
+                    println!("Auth failed");
                     let resp = ResponseType::CheckAuth(CheckAuthResponse {
                         result: false,
                     });
