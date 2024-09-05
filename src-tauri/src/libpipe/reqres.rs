@@ -32,6 +32,8 @@ pub enum RequestType {
     Query(QueryRequest),
     GetQueryPrompts(GetQueryPromptsRequest),
     GetQueryLog(GetQueryLogRequest),
+    ServerNegotiation(ServerNegotiationRequest),
+
 }
 
 #[derive(Serialize, Deserialize)]
@@ -43,6 +45,7 @@ pub enum ResponseType {
     Query(QueryResponse),
     GetQueryPrompts(GetQueryPromptsResponse),
     GetQueryLog(GetQueryLogResponse),
+    ServerNegotiation(ServerNegotiationResponse),
 }
 
 
@@ -50,15 +53,15 @@ pub enum ResponseType {
 
 //struct response
 
-//phone_home()
-#[derive(Serialize, Deserialize)]
-pub struct PhoneHomeRequest{
-    pub client: ClientInstance,
-}
+// //phone_home()
+// #[derive(Serialize, Deserialize)]
+// pub struct PhoneHomeRequest{
+//     pub client: ClientInstance,
+// }
 
-pub struct PhoneHomeResponse{
-    pub status: bool,
-}
+// pub struct PhoneHomeResponse{
+//     pub status: bool,
+// }
 
 //check_alive()
 #[derive(Serialize, Deserialize)]
@@ -127,4 +130,20 @@ pub struct GetQueryLogRequest{}
 pub struct GetQueryLogResponse{
     pub status: u16,
     pub log: String,
+}
+
+//server negotation
+#[derive(Serialize, Deserialize)]
+pub struct ServerNegotiationRequest{
+    pub version: u128,
+}
+
+//if hold is true, the server will wait for confirmation to start
+//if start is true, it means the server should start after as the other server is about to die
+//if both are false, the server should die
+#[derive(Serialize, Deserialize)]
+pub struct ServerNegotiationResponse{
+    pub status: u16,
+    pub hold: bool,
+    pub start: bool,
 }
