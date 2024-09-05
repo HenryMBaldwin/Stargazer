@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
-use actix_web::http::header::q;
-use reqwest::{Client, header, StatusCode, Response};
-//use anyhow::{Result, Error, anyhow};
+
+use reqwest::{Client, StatusCode};
 use serde_json::Value;
 use secstr::*;
 use futures::lock::Mutex;
@@ -12,6 +11,7 @@ use anyhow::{Result};
 use crate::{credential_manager, query_tracker};
 use credential_manager::CredentialManager;
 use query_tracker::{QueryTracker, random_id};
+
 pub struct OrionAPI{
     //base API URL
     base_url: String,
