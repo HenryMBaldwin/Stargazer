@@ -7,12 +7,16 @@
 // gracefully kill itself so the client can start up a new server.
 
 use chrono::Utc;
-use reqwest::Client;
-use stargazer::libinstance::instance::{ClientInstance, ServerInstance, generate_id};
+use stargazer::{libinstance::instance::{generate_id, ClientInstance, ServerInstance}, libpipe::{reqres::{RequestType, ResponseType, ServerNegotiationRequest}, consts::BUFFER_SIZE}};
+use named_pipe::PipeClient;
+use stargazer::libpipe::consts::PIPE_NAME;
+use std::io::{Read, Write};
 
-struct InstanceManager {
+pub struct InstanceManager {
     client: Option<ClientInstance>,
     server: ServerInstance,
+    active_queries: u32,
+    ready_to_die: bool
 }
 
 impl InstanceManager {
@@ -20,7 +24,7 @@ impl InstanceManager {
 
         let time = Utc::now();
         let id = generate_id();
-        let version = env!("VERSION").to_string();
+        let version = env!("VERSION").to_string().parse::<u128>().expect("Unable to parse version");
 
         let server = ServerInstance {
             time,
@@ -31,7 +35,33 @@ impl InstanceManager {
         InstanceManager {
             client: None,
             server,
+            active_queries: 0,
+            ready_to_die: false
         }
+    }
+
+    //incrememnt the active queries
+    //this should really only be called when a query that should not be cancled is active
+    pub fn add_query(&mut self) {
+        self.active_queries += 1;
+    }
+
+    //decrement the active queries
+    pub fn remove_query(&mut self) {
+        self.active_queries -= 1;
+    }
+
+    //check if there are any active queries
+    pub fn has_active_queries(&self) -> bool {
+        if self.active_queries > 0 {
+            return true;
+        }
+        return false;
+    }
+
+    //returns weather the server should die
+    pub fn should_die(&self) -> bool {
+        return self.ready_to_die;
     }
 
     //register a client instance
@@ -85,17 +115,77 @@ impl InstanceManager {
     // Determine if a the new server instance or this server instance should survive. 
     // Will need to implement atomic counter to keep track of open tasks.
     // returns true if the current server should kill itself
-    pub fn contemplate_suicide(self, new_server: ServerInstance) -> bool {
+    pub fn contemplate_suicide(&self, new_server_version: u128) -> bool {
         //favor newest version
-        let current_version = self.server.version.parse::<u128>().expect(&format!("Unable to parse version {}", self.server.version));
+        let current_version = self.server.version;
 
-        let new_version = new_server.version.parse::<u128>().expect(&format!("Unable to parse version {}", new_server.version));
+        let new_version = new_server_version;
 
         if new_version > current_version {
             return true;
         }
 
         return false;
+    }
+
+    //Function to determine if another server instance and running, and which should stay alive
+    //returns (hold, start)
+    //returns (true, false) if this instance should hold and ask again
+    //returns (false, true) if this instance should startup
+    //returns (false, false) if this instance should kill itself
+    pub fn confirm_startup(&self) -> (bool, bool) {
+        //check and see if the pipe is open
+        let mut client: PipeClient;
+
+        match PipeClient::connect(PIPE_NAME) {
+            Ok(cli) => {
+                client = cli;
+            },
+            Err(_) => {
+                return (false, true);
+            }
+        }
+
+        //if pipe exists (another server exists) then negotiate with it
+        let request = serde_json::to_string(&RequestType::ServerNegotiation(ServerNegotiationRequest{version: self.server.version.clone()})).expect("Error: error serializing json.");
+        
+        match client.write(request.as_bytes()) {
+            Ok(_) => {},
+            Err(_) => {
+                return (false, true);
+            }
+        }
+
+        let mut response = vec![0; BUFFER_SIZE];
+        let size = client.read(&mut response);
+
+        match size {
+            Ok(size) => {
+                let response = String::from_utf8(response[..size].to_vec());
+                if response.is_err() {
+                    return (false, true);
+                }
+                let response = response.unwrap();
+                let response = serde_json::from_str::<ResponseType>(&response);
+                if response.is_err() {
+                    return (false, true);
+                }
+                let response = response.unwrap();
+                match response {
+                    ResponseType::ServerNegotiation(server_negotiation) => {
+                        return (server_negotiation.hold, server_negotiation.start);
+                    },
+                    _ => {
+                        return (false, true);
+                    }
+                }
+            },
+            Err(_) => {
+                return (false, true);
+            }
+        }
+
+        
     }
 
 }
