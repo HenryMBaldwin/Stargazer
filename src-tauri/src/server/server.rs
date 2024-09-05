@@ -19,6 +19,7 @@ mod instance_manager;
 use futures::lock::Mutex;
 use query_tracker::QueryTracker;
 use reqwest::StatusCode;
+use stargazer::libinstance::instance;
 //tokio
 use tokio::net::TcpListener;
 
@@ -32,6 +33,10 @@ use stargazer::libpipe::{
     reqres::*
 };
 use stargazer::liberror::orion_api_err::*;
+
+//instance manager
+use instance_manager::InstanceManager;
+
 //interprocess
 use interprocess::os::windows::named_pipe::{self, tokio::PipeListenerOptionsExt};
 
@@ -45,7 +50,6 @@ use std::{
 };
 use actix_cors::Cors;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder, http};
-use serde::Deserialize;
 
 
 
@@ -54,23 +58,61 @@ pub async fn main() {
 
     env::set_var("RUST_BACKTRACE", "1");
     env::set_var("RUST_LOG", "trace");
+
+    //create instance manager
+    let instance_manager = Arc::new(Mutex::new(InstanceManager::new()));
+    //Check for other servers and negotiate
+
+    //(hold, start)
+    match instance_manager.lock().await.confirm_startup() {
+        //holding overrides starting
+        (true, _) => {
+            //continually ask again every 5 seconds
+            'negotiate: loop {
+                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                match instance_manager.lock().await.confirm_startup() {
+                    (true, _) => {
+                        //do nothing
+                    },
+                    (false, true) => {
+                        //start server
+                        break 'negotiate;
+                    },
+                    (false, false) => {
+                        //kill self
+                        std::process::exit(0);
+                    }
+                }
+            }
+        },
+        (_, true) => {
+            //start server (do nothing)
+        },
+        (false, false) => {
+            //kill self
+            std::process::exit(0);
+        }
+    }
     let query_tracker = Arc::new(Mutex::new(query_tracker::QueryTracker::new()));
     let orion_api = Arc::new(OrionAPI::new(query_tracker.clone()).init().await.expect("Error creating OrionAPI"));
     let cache_controller = Arc::new(CacheController::new().expect("Error creating CacheController"));
-    tokio::join!(http_server(orion_api.clone(), cache_controller.clone(), query_tracker.clone()),pipe_server(orion_api.clone(), cache_controller.clone(), query_tracker.clone()));
+    tokio::join!(http_server(orion_api.clone(), cache_controller.clone(), query_tracker.clone(), instance_manager.clone()), pipe_server(orion_api.clone(), cache_controller.clone(), query_tracker.clone(), instance_manager.clone()));
         
 }
 
 
 //http server
-async fn http_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheController>, query_tracker: Arc<Mutex<QueryTracker>>)  {
+async fn http_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheController>, query_tracker: Arc<Mutex<QueryTracker>>, instance_manager: Arc<Mutex<InstanceManager>>) {
    
 
     // Handler function for the web service
-    async fn process_request(body: web::Bytes, orion_api: web::Data<Arc<OrionAPI>>, cache_controller: web::Data<Arc<CacheController>>, query_tracker: web::Data<Arc<Mutex<QueryTracker>>> /* This is so cursed */) -> impl Responder {
+    async fn process_request(body: web::Bytes, orion_api: web::Data<Arc<OrionAPI>>, cache_controller: web::Data<Arc<CacheController>>, query_tracker: web::Data<Arc<Mutex<QueryTracker>>> /* This is so cursed */, instance_manager: web::Data<Arc<Mutex<InstanceManager>>>) -> impl Responder {
         let request = String::from_utf8(body.to_vec()).unwrap();
-        let response = handle_request(&request, orion_api.get_ref().clone(), cache_controller.get_ref().clone(), query_tracker.get_ref().clone()).await;
+        let response = handle_request(&request, orion_api.get_ref().clone(), cache_controller.get_ref().clone(), query_tracker.get_ref().clone(), instance_manager.get_ref().clone()).await;
         HttpResponse::Ok().content_type("application/json").body(response)
+
+        //after every response check if the server should die
+       //TODO: Implement this on http, for now it is only on pipe 
     }
 
     println!("Starting up web server");
@@ -88,6 +130,7 @@ async fn http_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheContro
             .app_data(web::Data::new(orion_api.clone()))
             .app_data(web::Data::new(cache_controller.clone()))
             .app_data(web::Data::new(query_tracker.clone()))
+            .app_data(web::Data::new(instance_manager.clone()))
             .route("/process", web::post().to(process_request))
     })
     .bind("127.0.0.1:4200").expect("error binding.")
@@ -96,7 +139,7 @@ async fn http_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheContro
 }
 
 //pipe server
-async fn pipe_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheController>, query_tracker: Arc<Mutex<QueryTracker>>) {
+async fn pipe_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheController>, query_tracker: Arc<Mutex<QueryTracker>>, instance_manager: Arc<Mutex<InstanceManager>>) {
     //create PipeListener
     let listener: named_pipe::tokio::PipeListener<_> = named_pipe::PipeListenerOptions::new()
     .name(Cow::from(OsStr::new(consts::PIPE_NAME_SERVER)))
@@ -107,26 +150,32 @@ async fn pipe_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheContro
         let orion_api_clone = orion_api.clone();
         let db_controller_clone = cache_controller.clone();
         let query_tracker_clone = query_tracker.clone();
+        let instance_manager_clone = instance_manager.clone();
+        let instance_manager_clone2 = instance_manager.clone();
         //blocks until connection is made
         let connection = listener.accept().await.expect("Error accepting connection");
         println!("Pipe Server: Connection accepted");
         tokio::spawn(async move {
             let (mut reader, mut writer) = connection.split();
-            let mut buffer = vec![0; 1024];
+            let mut buffer = vec![0; consts::BUFFER_SIZE];
             let read = reader.read(&mut buffer).await.expect("Error couldn't read string");
-            let response = handle_request(&String::from_utf8_lossy(&buffer[..read]).to_string(), orion_api_clone, db_controller_clone, query_tracker_clone).await;
+            let response = handle_request(&String::from_utf8_lossy(&buffer[..read]).to_string(), orion_api_clone, db_controller_clone, query_tracker_clone, instance_manager_clone).await;
 
             writer.write_all(response.as_bytes()).await.expect("Error Writing");
             writer.close().await.expect("Error closing the writer!");
-            drop((reader, writer))
+            drop((reader, writer));
+            //check if server should die
+            if instance_manager_clone2.lock().await.should_die() {
+                std::process::exit(0);
+            }
         });
 
     }
 }
 
 //handles requests, agnostic of whether they come from http or pipe server
-async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheController>, query_tracker: Arc<Mutex<QueryTracker>>) -> String{
-    println!("Handling request: {}", request);
+async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheController>, query_tracker: Arc<Mutex<QueryTracker>>, instance_manager: Arc<Mutex<InstanceManager>>) -> String{
+    println!("Server: Handling request: {}", request);
     //Handle request to Orion API
     match serde_json::from_str::<RequestType>(request) {
         //CheckAlive request
@@ -138,12 +187,16 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
         },
         //Login request
         Ok(RequestType::Login(login_request)) => {
+            //increment query count
+            instance_manager.lock().await.add_query();
             let result = orion_api.login(login_request.username.as_str(), login_request.password.as_str()).await;
             match result {
                 Ok(status) =>  {
                     let resp = ResponseType::Login(LoginResponse {
                         status: status.as_u16()
                     });
+                    //decrement query count
+                    instance_manager.lock().await.remove_query();
                     serde_json::to_string(&resp).unwrap()
                 }
                 Err(e) => {
@@ -152,6 +205,7 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
                     let resp = ResponseType::Login(LoginResponse {
                         status: StatusCode::UNAUTHORIZED.as_u16()
                     });
+                    instance_manager.lock().await.remove_query();
                     serde_json::to_string(&resp).unwrap()
                 }
             }
@@ -179,6 +233,9 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
         },
         //Query request
         Ok(RequestType::Query(query_request)) => {
+            //increment query count
+            instance_manager.lock().await.add_query();
+
             let query_id: String = query_request.id.clone();
             let query_cache: bool = query_request.cache.clone();
             let query_args:  Vec<String> = query_request.args.clone();
@@ -190,6 +247,8 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
                     status: StatusCode::OK.as_u16(),
                     result: result,
                 });
+                //decrement query count
+                instance_manager.lock().await.remove_query();
                 serde_json::to_string(&resp).unwrap()
             }
             else {
@@ -202,6 +261,8 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
                         });
                         //cache query
                         cache_controller.insert_query(query_id, &query_args, &data).unwrap();
+                        //decrement query count
+                        instance_manager.lock().await.remove_query();
                         serde_json::to_string(&resp).unwrap()
                     }
                     Err(e) => {
@@ -209,6 +270,8 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
                             status: StatusCode::UNAUTHORIZED.as_u16(),
                             result: String::from(format!("Error: {}",e)),
                         });
+                        //decrement query count
+                        instance_manager.lock().await.remove_query();
                         serde_json::to_string(&resp).unwrap()
                     }
                 }
@@ -216,6 +279,8 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
         },
         //GetQueryPrompts request
         Ok(RequestType::GetQueryPrompts(get_query_prompts_request)) => {
+            //increment query count
+            instance_manager.lock().await.add_query();
             let result = orion_api.get_query_prompts(get_query_prompts_request.id).await;
             match result {
                 Ok(prompts) =>  {
@@ -223,6 +288,8 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
                         status: StatusCode::OK.as_u16(),
                         prompts: prompts,
                     });
+                    //decrement query count
+                    instance_manager.lock().await.remove_query();
                     serde_json::to_string(&resp).unwrap()
                 }
                 Err(e) => {
@@ -230,6 +297,8 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
                         status: StatusCode::UNAUTHORIZED.as_u16(),
                         prompts: String::from(format!("Error: {}",e)),
                     });
+                    //decrement query count
+                    instance_manager.lock().await.remove_query();
                     serde_json::to_string(&resp).unwrap()
                 }
             }
@@ -253,6 +322,37 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
                     serde_json::to_string(&resp).unwrap()
                 }
             }
+        },
+        //ServerNegotiation request
+        Ok(RequestType::ServerNegotiation(server_negotiation_request)) => {
+            let result = instance_manager.lock().await.contemplate_suicide(server_negotiation_request.version);
+
+            let mut hold = false;
+            let mut start = false;
+
+            match result {
+                true => {
+                    //ensure there are no active queries
+                    if instance_manager.lock().await.has_active_queries() {
+                        //tell the other server to hold
+                        hold = true;
+                    }
+                    else {
+                        //tell the other server to start
+                        start = true;
+                    }
+                },
+                false => {
+                    //do nothing    
+                }
+            }
+            //respond
+            let resp = ResponseType::ServerNegotiation(ServerNegotiationResponse {
+                status: StatusCode::OK.as_u16(),
+                hold,
+                start
+            });
+            serde_json::to_string(&resp).unwrap()
         },
         //Error
         Err(e) => {
