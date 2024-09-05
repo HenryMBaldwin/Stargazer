@@ -12,21 +12,8 @@ use reqwest::StatusCode;
 use serde_json;
 use anyhow::{Result,Error};
 
-//returns true if this client should stay alive
-//returns false if this client should kill itself
-//non tauri command version of phone_home
-//starts server if it isn't alive then returns true
-pub async fn register(){
-    
-}
 
-//returns true if this client should stay alive
-//returns false if this client should kill itself
-//no expectations of a living server here
-// #[tauri::command]
-// pub async fn phone_home() -> Result<bool,()> {
-//     Ok(true)
-// }
+
 //checks if the server is alive and starts it if it isn't
 #[tauri::command]
 pub async fn check_alive() -> bool {
@@ -122,7 +109,7 @@ async fn start_wait(request: &str) -> Result<String> {
         }
     };
     client.write(request.as_bytes()).expect("Error: client failed to write to pipe.");
-    let mut response = vec![0; 1024];
+    let mut response = vec![0; consts::BUFFER_SIZE];
     let size = client.read(&mut response).expect("Error: client failed to read from pipe.");
     Ok(String::from_utf8(response[..size].to_vec()).expect("Error converting response to string."))
 }
@@ -142,7 +129,7 @@ async fn send_wait(request: &str) -> Result<String> {
         }
     };
     client.write(&request.as_bytes()).expect("Error: client failed to write to pipe.");
-    let mut response = vec![0; 1024];
+    let mut response = vec![0; consts::BUFFER_SIZE];
     let size = client.read(&mut response).expect("Error: client failed to read from pipe.");
     Ok(String::from_utf8(response[..size].to_vec()).expect("Error converting response to string."))
 }
