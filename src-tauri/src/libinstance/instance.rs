@@ -14,7 +14,7 @@ pub struct ClientInstance {
 pub struct ServerInstance {
     pub time: DateTime<Utc>,
     pub id: u128,
-    pub version: String,
+    pub version: u128,
 }
 
 pub fn generate_id() -> u128 {
