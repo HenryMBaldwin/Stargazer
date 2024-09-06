@@ -10,6 +10,8 @@ pub enum AuthError {
     InavalidLogin(StatusCode),
     #[error("Couldn't get databases")]
     NoDatabases,
+    #[error("Incorrect fields: {0}")]
+    IncorrectFields(String),
     #[error("Auth is invalid for unknown reasons: {0}")]
     Unknown(String)
 }

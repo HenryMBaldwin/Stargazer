@@ -28,7 +28,7 @@ pub struct OrionAPI{
     //for tracking query events
     query_tracker: Arc<Mutex<QueryTracker>>,
     //for tracking current database
-    database_id: Mutex<u128>,
+    database_id: Mutex<u64>,
 }
 
 impl OrionAPI{
@@ -57,6 +57,15 @@ impl OrionAPI{
             let password = self.credential_manager.get_password().await.unwrap();
 
             self.login(&username, &String::from_utf8(password.unsecure().to_vec()).expect("Error unsecuring string")).await?;
+            
+            //after auth, get current database
+            let databases = self.get_databases().await?;
+            for database in databases {
+                if database.2 {
+                    let mut database_id = self.database_id.lock().await;
+                    *database_id = database.0.parse::<u64>().expect("Error parsing database id");
+                }
+            }
         }
         Ok(self)
     }
@@ -73,7 +82,7 @@ impl OrionAPI{
         self.authenticate().await
     }
 
-    //attempts to authenticate with Orion using saved username and password
+    //attempts to authenticate with Orion using saved username and password and database
     async fn authenticate(&self) -> Result<StatusCode> {
         //url 
         let auth_url =format!("{}security/token", self.base_url);
@@ -289,11 +298,55 @@ impl OrionAPI{
                 let mut database_vec = Vec::new();
                 for database in databases {
                     //attempt to get fields
-                    //TODO handle errors, panicking on the unwraps is bad
-                    let id = database.get("id").unwrap().as_u64().unwrap();
-                    let name = database.get("clientName").unwrap().as_str().unwrap();
-                    let selected = database.get("selected").unwrap().as_bool().unwrap();
-                    database_vec.push((id.to_string(), name.to_string(), selected));
+                    let id: String;
+                    match database.get("id") {
+                        Some(id_val) => {
+                            match id_val.as_u64() {
+                                Some(id_num) => {
+                                    id = id_num.to_string();
+                                },
+                                None => {
+                                    return Err(AuthError::IncorrectFields("Could not get id as u64.".to_string()).into());
+                                }
+                            }
+                        },
+                        None => {
+                            return Err(AuthError::IncorrectFields("No id field.".to_string()).into());
+                        }
+                    }
+                    let name: String;
+                    match database.get("clientName") {
+                        Some(name_val) => {
+                            match name_val.as_str() {
+                                Some(name_str) => {
+                                    name = name_str.to_string();
+                                },
+                                None => {
+                                    return Err(AuthError::IncorrectFields("Could not get name as string".to_string()).into());
+                                }
+                            }
+                        },
+                        None => {
+                            return Err(AuthError::IncorrectFields("No name field".to_string()).into());
+                        }
+                    }
+                    let selected: bool;
+                    match database.get("selected") {
+                        Some(selected_val) => {
+                            match selected_val.as_bool() {
+                                Some(selected_bool) => {
+                                    selected = selected_bool;
+                                },
+                                None => {
+                                    return Err(AuthError::IncorrectFields("Could not get selected as bool".to_string()).into());
+                                }
+                            }
+                        },
+                        None => {
+                            return Err(AuthError::IncorrectFields("No selected field".to_string()).into());
+                        }
+                    }
+                    database_vec.push((id, name, selected));
                 }
                 Ok(database_vec)
             },
@@ -301,5 +354,72 @@ impl OrionAPI{
                 Err(AuthError::NoDatabases.into())
             }
         }
+    }
+
+    //switches the current database, then returns the new database list
+    //this is effectively a reauth with a session header and a database header
+    pub async fn switch_database(&self, id: u64) -> Result<Vec<(String, String, bool)>> {
+        //ensure database id is valid
+        let databases = self.get_databases().await?;
+        let mut valid = false;
+        let mut selected = false;
+        for database in &databases {
+            if database.0.parse::<u64>().expect("Error parsing database id") == id {
+                valid = true;
+                selected = database.2;
+            }
+        }
+        if !valid {
+            return Err(anyhow!("Invalid database id"));
+        }
+        else {
+            //ensure database requested is not already selected
+            if selected {
+                return Ok(databases);
+            }
+        }
+
+        //switch database
+        let auth_url =format!("{}security/token", self.base_url);
+        let client = Client::new();
+        let auth_header = {
+            let token = self.get_auth().await?;
+            format!("Switch {}", token)
+        };
+
+        let response = client
+            .get(auth_url)
+            .header("Authorization", auth_header)
+            .header("AlClientId", id)
+            .send()
+            .await?;
+
+        let status = response.status();
+        if response.status().is_success() {
+            //parse response body as JSON
+            let json: Value = response.
+                json::<serde_json::Value>()
+                .await?;
+            if let Some(token) = json["access_token"].as_str() {
+                let mut auth_token = self.auth_token.lock().await;
+                *auth_token = token.to_string();
+                //set auth token to valid
+                let mut valid = self.auth_valid.lock().await;
+                *valid = true;
+                let mut database_id = self.database_id.lock().await;
+                *database_id = id;
+                //release locks
+                drop(auth_token);
+                drop(valid);
+                Ok(self.get_databases().await?)
+            }
+            else {
+                Err(AuthError::Unknown(format!("Incorrect json response from Orion: {}", json.to_string())).into())
+            }
+        }
+        else {
+            Err(AuthError::InavalidLogin(status).into())
+        }
+        
     }
 }

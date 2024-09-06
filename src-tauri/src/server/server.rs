@@ -374,6 +374,28 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
                     serde_json::to_string(&resp).unwrap()
                 }
             }
+        },
+        //SwitchDatabase request
+        Ok(RequestType::SwitchDatabase(switch_database_request)) => {
+            let id = switch_database_request.id.parse::<u64>().expect("Error: invalid database id.");
+            let result = orion_api.switch_database(id).await;
+
+            match result {
+                Ok(databases) => {
+                    let resp = ResponseType::SwitchDatabase(SwitchDatabaseResponse {
+                        status: StatusCode::OK.as_u16(),
+                        databases: databases,
+                    });
+                    serde_json::to_string(&resp).unwrap()
+                },
+                Err(e) => {
+                    let resp = ResponseType::SwitchDatabase(SwitchDatabaseResponse {
+                        status: StatusCode::UNAUTHORIZED.as_u16(),
+                        databases: vec!(),
+                    });
+                    serde_json::to_string(&resp).unwrap()
+                }
+            }
         }
         //Error
         Err(e) => {

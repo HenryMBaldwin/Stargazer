@@ -34,6 +34,7 @@ pub enum RequestType {
     GetQueryLog(GetQueryLogRequest),
     ServerNegotiation(ServerNegotiationRequest),
     GetDatabases(GetDatabasesRequest),
+    SwitchDatabase(SwitchDatabaseRequest),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -47,6 +48,7 @@ pub enum ResponseType {
     GetQueryLog(GetQueryLogResponse),
     ServerNegotiation(ServerNegotiationResponse),
     GetDatabases(GetDatabasesResponse),
+    SwitchDatabase(SwitchDatabaseResponse),
 }
 
 
@@ -155,6 +157,18 @@ pub struct GetDatabasesRequest{}
 
 #[derive(Serialize, Deserialize)]
 pub struct GetDatabasesResponse{
+    pub status: u16,
+    pub databases: Vec<(String, String, bool)>,
+}
+
+//switch_database()
+#[derive(Serialize, Deserialize)]
+pub struct SwitchDatabaseRequest{
+    pub id: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SwitchDatabaseResponse{
     pub status: u16,
     pub databases: Vec<(String, String, bool)>,
 }

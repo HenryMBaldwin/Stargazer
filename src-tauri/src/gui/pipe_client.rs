@@ -3,7 +3,7 @@
 // Important: Any functions in the orion_api in the server must be reflected here for the gui to have access to them.  
 // Important: Any functions that communicate with the server must ensure to call check_alive() before attempting to communicate with the server.
 use std::env;
-use stargazer::libpipe::reqres::{GetDatabasesRequest, GetQueryLogRequest};
+use stargazer::libpipe::reqres::{GetDatabasesRequest, GetQueryLogRequest, SwitchDatabaseRequest};
 use tokio::process::Command;
 use std::io::{Read, Write};
 use named_pipe::PipeClient;
@@ -109,6 +109,17 @@ pub async fn get_databases() -> Vec<(String, String, bool)>{
         _ => { vec![(String::from("0"), String::from("Error: failed to get databases."), true)] }
     }
 }
+
+#[tauri::command]
+pub async fn switch_database(id: String) -> Vec<(String, String, bool)> {
+    let request = serde_json::to_string(&RequestType::SwitchDatabase(SwitchDatabaseRequest{id})).expect("Error: error serializing json.");
+    let response = serde_json::from_str::<ResponseType>(&send_wait(&request).await.expect("Error connecting to pipe")).expect("Error deserializing json.");
+    match response {
+        ResponseType::SwitchDatabase(switch_database) => switch_database.databases,
+        _ => { vec![(String::from("0"), String::from("Error: failed to switch databases."), true)] }
+    }
+}
+
 // writes request to named pipe and waits for reponse, for check_alive()
 async fn start_wait(request: &str) -> Result<String> {
     let mut client =  match PipeClient::connect(consts::PIPE_NAME) {

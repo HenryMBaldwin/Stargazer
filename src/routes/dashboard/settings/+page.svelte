@@ -29,7 +29,6 @@
                     name: item[1],
                     selected: item[2],
                 }
-                console.log(db.name);
                 if (db.selected) {
                     selectedDatabaseStore.set(db);
                 }
@@ -48,8 +47,29 @@
         return databases;
     }
 
-    function handDatabaseSelection(database: Database) {
+    async function handDatabaseSelection(database: Database) {
+        //Optimistically update the selected database
         selectedDatabaseStore.set(database);
+        let success = false;
+        
+        await invoke("switch_database", {id: database.id}).then((res) => {
+            const result = res as [string, string, boolean][];
+            result.forEach(item => {
+                let db: Database = {
+                    id: item[0],
+                    name: item[1],
+                    selected: item[2],
+                }
+                if (db.selected) {
+                    if (db.id === database.id) {
+                        success = true;
+                    }
+                    else{
+                        selectedDatabaseStore.set(db);
+                    }
+                }
+            });
+        });
     }
 
     let selectedDatabase: Database = {
