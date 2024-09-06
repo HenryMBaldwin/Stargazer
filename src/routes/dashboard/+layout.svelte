@@ -5,7 +5,7 @@
     import { AppShell, AppRail} from "@skeletonlabs/skeleton"
     import { page } from "$app/stores";
     const appWindow = getCurrentWebviewWindow()
-
+		
     onMount(() => {
         appWindow.setResizable(true);
         appWindow.setMaximizable(true);
@@ -23,12 +23,17 @@
             </svelte:fragment>
             <div class="flex flex-col items-start w-full gap-8 py-10 font-aleo items-center">
                 <div class="flex flex-col items-center gap-2 w-full">
-                    <a href="/dashboard/home" class="btn w-5/6 hover:w-full text-md hover:text-surface-50 hover:bg-secondary-500 hover:underline w-full rounded-none {$page.url.pathname === '/dashboard/home' ? 'border-y border-secondary-500': ''}">Home</a>
-                    <a href="/dashboard/queries" class="btn w-5/6 hover:w-full text-md hover:text-surface-50 hover:bg-secondary-500 hover:underline w-full rounded-none {$page.url.pathname === '/dashboard/queries' ? 'border-y border-secondary-500': ''}">Queries</a>
-                    <a href="/dashboard/scheduler" class="btn w-5/6 hover:w-full text-md hover:text-surface-50 hover:bg-secondary-500 hover:underline w-full rounded-none {$page.url.pathname === '/dashboard/scheduler' ? 'border-y border-secondary-500': ''}">Scheduler</a>
-                    <a href="/dashboard/settings" class="btn w-5/6 hover:w-full text-md hover:text-surface-50 hover:bg-secondary-500 hover:underline w-full rounded-none {$page.url.pathname === '/dashboard/settings' ? 'border-y border-secondary-500': ''}">Settings</a>
+                    <a href="/dashboard/home" class="btn !w-5/6 hover:!w-full text-md hover:text-surface-50 hover:bg-secondary-500 hover:underline w-full rounded-none {$page.url.pathname === '/dashboard/home' ? 'border-y border-secondary-500': ''}">Home</a>
+                    <a href="/dashboard/queries" class="btn !w-5/6 hover:!w-full text-md hover:text-surface-50 hover:bg-secondary-500 hover:underline w-full rounded-none {$page.url.pathname === '/dashboard/queries' ? 'border-y border-secondary-500': ''}">Queries</a>
+                    <a href="/dashboard/scheduler" class="btn !w-5/6 hover:!w-full text-md hover:text-surface-50 hover:bg-secondary-500 hover:underline w-full rounded-none {$page.url.pathname === '/dashboard/scheduler' ? 'border-y border-secondary-500': ''}">Scheduler</a>
+                    <a href="/dashboard/settings" class="btn !w-5/6 hover:!w-full text-md hover:text-surface-50 hover:bg-secondary-500 hover:underline w-full rounded-none {$page.url.pathname === '/dashboard/settings' ? 'border-y border-secondary-500': ''}">Settings</a>
                 </div>
             </div>
+            <svelte:fragment slot="trail">
+            <div class="w-5/6 m-auto pb-4">   
+              <ServerStatus />
+            </div>
+            </svelte:fragment>
         </AppRail>
     </svelte:fragment>
     <slot />

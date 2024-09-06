@@ -14,29 +14,3 @@
         <h3 class="h3">Basic Formulas</h3>    
     </div>
 </div>
-
-<style>
-    .page-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        padding: 0;
-        margin: 0;
-    }
-    .logo {
-        width: 300px;
-        max-width: 80%;
-        height: auto;
-        margin: 20px;
-    }
-    .text-container{
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: top;
-        justify-content: left;
-        width: 80%;
-    }
-</style>

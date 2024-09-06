@@ -24,3 +24,9 @@ export interface SuccessMetadata {
 export interface ErrorMetadata {
   message: string;
 }
+
+export interface Database {
+  id: string;
+  name: string;
+  selected: boolean;
+}
