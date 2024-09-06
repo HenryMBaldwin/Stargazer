@@ -8,6 +8,8 @@ pub enum AuthError {
     EmptyUsername,
     #[error("Login rejected by Orion. Status Code: {0}")]
     InavalidLogin(StatusCode),
+    #[error("Couldn't get databases")]
+    NoDatabases,
     #[error("Auth is invalid for unknown reasons: {0}")]
     Unknown(String)
 }

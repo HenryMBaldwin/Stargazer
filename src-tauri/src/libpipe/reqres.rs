@@ -33,7 +33,7 @@ pub enum RequestType {
     GetQueryPrompts(GetQueryPromptsRequest),
     GetQueryLog(GetQueryLogRequest),
     ServerNegotiation(ServerNegotiationRequest),
-
+    GetDatabases(GetDatabasesRequest),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -46,6 +46,7 @@ pub enum ResponseType {
     GetQueryPrompts(GetQueryPromptsResponse),
     GetQueryLog(GetQueryLogResponse),
     ServerNegotiation(ServerNegotiationResponse),
+    GetDatabases(GetDatabasesResponse),
 }
 
 
@@ -146,4 +147,14 @@ pub struct ServerNegotiationResponse{
     pub status: u16,
     pub hold: bool,
     pub start: bool,
+}
+
+//get_databases()
+#[derive(Serialize, Deserialize)]
+pub struct GetDatabasesRequest{}
+
+#[derive(Serialize, Deserialize)]
+pub struct GetDatabasesResponse{
+    pub status: u16,
+    pub databases: Vec<(String, String, bool)>,
 }

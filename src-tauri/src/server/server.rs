@@ -354,6 +354,27 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
             });
             serde_json::to_string(&resp).unwrap()
         },
+        //GetDatabases request
+        Ok(RequestType::GetDatabases(_get_databases_request)) => {
+            let result = orion_api.get_databases().await;
+
+            match result {
+                Ok(databases) => {
+                    let resp = ResponseType::GetDatabases(GetDatabasesResponse {
+                        status: StatusCode::OK.as_u16(),
+                        databases: databases,
+                    });
+                    serde_json::to_string(&resp).unwrap()
+                },
+                Err(e) => {
+                    let resp = ResponseType::GetDatabases(GetDatabasesResponse {
+                        status: StatusCode::UNAUTHORIZED.as_u16(),
+                        databases: vec!(),
+                    });
+                    serde_json::to_string(&resp).unwrap()
+                }
+            }
+        }
         //Error
         Err(e) => {
             //TODO Handle Error

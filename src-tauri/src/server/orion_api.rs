@@ -6,7 +6,7 @@ use serde_json::Value;
 use secstr::*;
 use futures::lock::Mutex;
 use stargazer::liberror::orion_api_err::*;
-use anyhow::{Result};
+use anyhow::{Result, anyhow};
 //use credential manager
 use crate::{credential_manager, query_tracker};
 use credential_manager::CredentialManager;
@@ -27,6 +27,8 @@ pub struct OrionAPI{
     credential_manager: CredentialManager,
     //for tracking query events
     query_tracker: Arc<Mutex<QueryTracker>>,
+    //for tracking current database
+    database_id: Mutex<u128>,
 }
 
 impl OrionAPI{
@@ -41,6 +43,7 @@ impl OrionAPI{
             password: Mutex::new(SecStr::new("".into())),
             credential_manager: CredentialManager::new().expect("Error creating CredentialManager"),
             query_tracker,
+            database_id: Mutex::new(0),
         }
     }
 
@@ -260,5 +263,43 @@ impl OrionAPI{
             Err(error.into())
         }
 
+    }
+
+    //gets databases this account has access to
+    pub async fn get_databases(&self) -> Result<Vec<(String, String, bool)>> {
+        println!("Getting databases");
+        let client = Client::new();
+        let query_url = format!("{}Authorization/Databases",self.base_url);
+        let auth_header = {
+            let token = self.get_auth().await?;
+            format!("Session {}", token)
+        };
+
+        let response = client
+            .get(&query_url)
+            .header("Authorization", auth_header)
+            .send()
+            .await?;
+        let json_string = response.text().await?;
+
+        let body: Value = serde_json::from_str(&json_string)?;
+        
+        match body.as_array() {
+            Some(databases) => {
+                let mut database_vec = Vec::new();
+                for database in databases {
+                    //attempt to get fields
+                    //TODO handle errors, panicking on the unwraps is bad
+                    let id = database.get("id").unwrap().as_u64().unwrap();
+                    let name = database.get("clientName").unwrap().as_str().unwrap();
+                    let selected = database.get("selected").unwrap().as_bool().unwrap();
+                    database_vec.push((id.to_string(), name.to_string(), selected));
+                }
+                Ok(database_vec)
+            },
+            None => {
+                Err(AuthError::NoDatabases.into())
+            }
+        }
     }
 }
