@@ -93,6 +93,7 @@ fn main() {
       pipe_client::get_query_log,
       pipe_client::get_databases,
       pipe_client::switch_database,
+      pipe_client::logout,
     ])
     .build(tauri::generate_context!())
     .expect("error while running tauri application")

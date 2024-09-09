@@ -75,6 +75,18 @@ pub async fn login(username: String, password: String) -> u16 {
     
 }
 
+//logs out of the server
+#[tauri::command]
+pub async fn logout() -> u16 {
+    let request = serde_json::to_string(&RequestType::Logout(stargazer::libpipe::reqres::LogoutRequest{})).expect("Error: error serializing json.");
+    let response = serde_json::from_str::<ResponseType>(&send_wait(&request).await.expect("Error connecting to pipe")).expect("Error deserializing json.");
+    match response {
+        ResponseType::Logout(logout) => logout.status,
+        _ => {StatusCode::INTERNAL_SERVER_ERROR.as_u16()}
+    }
+}
+
+
 //checks whether server has a valid login
 #[tauri::command]
 pub async fn check_auth() -> bool {

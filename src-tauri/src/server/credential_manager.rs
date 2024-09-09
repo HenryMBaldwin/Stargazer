@@ -110,6 +110,23 @@ impl CredentialManager {
             None => String::new()
         };
         Ok(username)
-    }  
+    }
+
+    //deletes credentials from the keyring and cache
+    fn delete_credentials(service: &String, username: &String) -> Result<()> {
+        let entry = Entry::new(service, username).expect("Error creating keyring entry");
+        entry.delete_credential()?;
+        Ok(())
+    }
+
+    pub async fn logout(&self) -> Result<()> {
+        let username = self.username.lock().await;
+        let service = self.service.clone();
+        Self::delete_credentials(&service, &username)?;
+        let username_cache_path = Self::get_username_cache_path()?;
+        fs::remove_file(username_cache_path)?;
+        *self.has_credentials.lock().await = false;
+        Ok(())
+    }
 }
 

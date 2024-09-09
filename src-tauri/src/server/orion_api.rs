@@ -124,6 +124,21 @@ impl OrionAPI{
         
     }
 
+    //logs out of Orion by setting auth token to empty and auth_valid to false
+    //also clears credentials
+    pub async fn logout(&self) -> Result<()>{
+        let mut auth_token = self.auth_token.lock().await;
+        *auth_token = String::new();
+        let mut valid = self.auth_valid.lock().await;
+        *valid = false;
+        let mut username = self.username.lock().await;
+        *username = String::new();
+        let mut password = self.password.lock().await;
+        *password = SecStr::new("".into());
+        let _ = self.credential_manager.logout().await?;
+        Ok(())
+    }
+
     //returns whether the instance currently has a valid auth token
     pub async fn check_auth(&self) -> bool {
         self.auth_valid.lock().await.clone()

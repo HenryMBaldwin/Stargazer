@@ -396,6 +396,23 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
                     serde_json::to_string(&resp).unwrap()
                 }
             }
+        },
+        Ok(RequestType::Logout(_)) => {
+            let result = orion_api.logout().await;
+            match result {
+                Ok(_) => {
+                    let resp = ResponseType::Logout(LogoutResponse {
+                        status: StatusCode::OK.as_u16()
+                    });
+                    serde_json::to_string(&resp).unwrap()
+                },
+                Err(e) => {
+                    let resp = ResponseType::Logout(LogoutResponse {
+                        status: StatusCode::UNAUTHORIZED.as_u16()
+                    });
+                    serde_json::to_string(&resp).unwrap()
+                }
+            }    
         }
         //Error
         Err(e) => {
