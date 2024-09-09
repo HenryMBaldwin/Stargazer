@@ -1,4 +1,5 @@
 <script lang=ts>
+	import { goto } from "$app/navigation";
     import type { Database } from "$lib/types";
 	import { ListBox, ListBoxItem, popup, type PopupSettings } from "@skeletonlabs/skeleton";
 	import { invoke } from "@tauri-apps/api/core";
@@ -72,6 +73,14 @@
         });
     }
 
+    async function logout() {
+        await invoke("logout").then((res) => {
+            if (res) {
+                goto("/");
+            }
+        });
+    }
+
     let selectedDatabase: Database = {
         id: "0",
         name: "None",
@@ -100,6 +109,7 @@
 <div class="w-full flex flex-col items-start py-8 px-20 gap-8 max-w-prose gap-8 font-aleo">
     <h1 class="h2 font-aleo">Settings</h1>
     <div class="flex flex-col items-start gap-4 w-full card bg-surface-50 p-4 ">
+        <!-- Orion Settings -->
         <div class="flex flex-col items-start  w-full">
             <h3 class="h3 font-aleo">Orion</h3>
             <hr class="!border-t-1 !border-secondary-500 w-full"/>
@@ -109,6 +119,19 @@
             <button class="btn variant-ringed w-48 justify-between hover:variant-ringed-primary" use:popup={selectedDatabaseCombobox}>
                 <span class="truncate text-sm">{$selectedDatabaseStore.name}</span>
                 <span>↓</span>
+            </button>
+        </div>
+        <!-- /Orion Settings -->
+    </div>
+    <div class="flex flex-col items-start gap-4 w-full card bg-surface-50 p-4 ">
+         <!-- General Settings -->
+        <div class="flex flex-col items-start  w-full">
+            <h3 class="h3 font-aleo">General</h3>
+            <hr class="!border-t-1 !border-secondary-500 w-full"/>
+        </div>
+        <div class="flex flex-row items-center justify-end w-full">
+            <button class="btn variant-ringed-secondary justify-center hover:variant-filled-secondary hover:text-white" on:click={logout}>
+                <span class="text-sm">Logout</span>
             </button>
         </div>
     </div>
