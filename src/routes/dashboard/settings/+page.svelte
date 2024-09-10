@@ -116,7 +116,7 @@
         </div>
         <div class="flex flex-row items-center justify-between w-full">
             Database
-            <button class="btn variant-ringed w-48 justify-between hover:variant-ringed-primary" use:popup={selectedDatabaseCombobox}>
+            <button class="btn variant-ringed-secondary w-48 justify-between hover:variant-filled-secondary hover:text-white" use:popup={selectedDatabaseCombobox}>
                 <span class="truncate text-sm">{$selectedDatabaseStore.name}</span>
                 <span>↓</span>
             </button>
