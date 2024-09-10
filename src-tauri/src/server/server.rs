@@ -122,6 +122,7 @@ async fn http_server(orion_api: Arc<OrionAPI>, cache_controller: Arc<CacheContro
         .wrap(
             Cors::default()
                 .allowed_origin("https://localhost:3000")
+                .allowed_origin("https://henrymbaldwin.github.io")
                 .allowed_methods(vec!["GET", "POST", "OPTIONS"])
                 .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
                 .allowed_header(http::header::CONTENT_TYPE)

@@ -35,6 +35,7 @@ pub enum RequestType {
     ServerNegotiation(ServerNegotiationRequest),
     GetDatabases(GetDatabasesRequest),
     SwitchDatabase(SwitchDatabaseRequest),
+    Logout(LogoutRequest),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -49,6 +50,7 @@ pub enum ResponseType {
     ServerNegotiation(ServerNegotiationResponse),
     GetDatabases(GetDatabasesResponse),
     SwitchDatabase(SwitchDatabaseResponse),
+    Logout(LogoutResponse),
 }
 
 
@@ -86,6 +88,15 @@ pub struct LoginRequest{
 #[derive(Serialize, Deserialize)]
 pub struct LoginResponse{
     //where u16 is a status code
+    pub status: u16
+}
+
+//logout()
+#[derive(Serialize, Deserialize)]
+pub struct LogoutRequest{}
+
+#[derive(Serialize, Deserialize)]
+pub struct LogoutResponse{
     pub status: u16
 }
 

@@ -1,0 +1,11 @@
+{
+    "version": "0.1.0", 
+    "notes": "Initial release.", 
+    "pub_date": "2024-09-10T12:00:00Z", 
+    "platforms": {
+        "windows-x86_64": {
+        "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSbHAvd2kyR0NQS1RHcU9UQ25pQkJ4ekR1SDJDWHd2RXVycGRvaXN3QmpVcDUrZDFicmdiMXU1b01qaFhxUWJiSlIyN3pxUEJqbVpKSm9uaWNMd3Y5YUM5dVVWNWQxcUEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzI1OTQ4ODQyCWZpbGU6c3RhcmdhemVyXzAuMS4wX3g2NC1zZXR1cC5leGUKc1VJVzM5akdzSjZGcis1M1JPZTdnTC9WVml1ZHJ1eiszcUYyQ2kyNmVCTnZNeDJDUk9QOGZaaVJRaGRCQXM4NWJjekUzTjdZcTRDL1VrRUZtNWpLRFE9PQo=",  
+        "url": "https://github.com/henrymbaldwin/orion_api_stargazer/releases/latest/download/stargazer_0.1.0_x64-setup.zip"
+        }
+    }
+}

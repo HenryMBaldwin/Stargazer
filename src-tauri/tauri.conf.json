@@ -8,6 +8,7 @@
   "bundle": {
     "active": true,
     "category": "DeveloperTool",
+    "createUpdaterArtifacts": true,
     "copyright": "",
     "targets": "all",
     "externalBin": [],
@@ -42,7 +43,14 @@
   "productName": "stargazer",
   "version": "0.1.0",
   "identifier": "com.henrymbaldwin.stargazer",
-  "plugins": {},
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI5OEY2MEQ4MjJGQ0E3NjUKUldSbHAvd2kyR0NQS2VDVkZmcmZwT0d6Vm0xdGRxMlI5SCtSRE5za0FkWW5mZkV2STBSUFVTNFcK",
+      "endpoints": [
+        "https://github.com/henrymbaldwin/orion_api_stargazer/releases/latest/download/latest.json"
+      ]
+    }
+  },
   "app": {
     "windows": [
       {

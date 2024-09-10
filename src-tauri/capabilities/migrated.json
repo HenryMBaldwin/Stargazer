@@ -8,6 +8,9 @@
   "permissions": [
     "core:default",
     "core:window:allow-set-resizable",
-    "core:window:allow-set-maximizable"
+    "core:window:allow-set-maximizable",
+    "updater:default",
+    "process:default",
+    "updater:default"
   ]
 }

@@ -1,1 +1,1 @@
-{"migrated":{"identifier":"migrated","description":"permissions that were migrated from v1","local":true,"windows":["main"],"permissions":["core:default","core:window:allow-set-resizable","core:window:allow-set-maximizable"]}}
+{"migrated":{"identifier":"migrated","description":"permissions that were migrated from v1","local":true,"windows":["main"],"permissions":["core:default","core:window:allow-set-resizable","core:window:allow-set-maximizable","updater:default","process:default","updater:default"]}}

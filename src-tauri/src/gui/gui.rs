@@ -6,6 +6,7 @@ use tauri::{
 };
 use stargazer::libinstance::instance::{ClientInstance, generate_id};
 use chrono::Utc;
+use tauri_plugin_updater::UpdaterExt;
 mod pipe_client;
 
 const TRAY_ICON: Image<'_> = include_image!("./icons/icon.ico");
@@ -26,9 +27,20 @@ fn main() {
             }
             let _ = webview_window.set_focus();
     }))
-    .manage(client)
+    .plugin(tauri_plugin_updater::Builder::new().build())
+    .plugin(tauri_plugin_process::init())
+    //.manage(client)
     .setup(|app| {
-
+      //check for updates on startup and then every hour
+      //let handle = app.handle().clone();
+      // tauri::async_runtime::spawn(async move {
+      //     let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(3600));
+      //     loop {
+      //         interval.tick().await;
+      //         println!("Client: checking for updates");
+      //         update(handle.clone()).await.unwrap();
+      //     }
+      // });
       let hide_item = MenuItemBuilder::with_id("hide", "Hide").build(app)?;
       let show_item = MenuItemBuilder::with_id("show", "Show").build(app)?;
       //system tray and menu
@@ -103,4 +115,21 @@ fn main() {
       }
       _ => {}
     });
+}
+
+async fn update(app: tauri::AppHandle) -> anyhow::Result<()> {
+  if let Some(update) = app.updater()?.check().await? {
+    let mut downloaded = 0;
+    update.download_and_install(|chunk_length, content_length| {
+      downloaded += chunk_length;
+      println!("downloaded {downloaded} from {content_length:?}");
+    }, || {
+      println!("download finished");
+    }).await?;
+
+    println!("update installed");
+    app.restart();
+  }
+
+  Ok(())
 }
