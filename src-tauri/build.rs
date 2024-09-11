@@ -2,8 +2,8 @@ use std::fs;
 use serde_json;
 
 fn main() {
-  
-  //get version from tauri config
+  //get version from tauri configstargazer_tauri-plugin-shell = "2.0.0-rc"
+
   let config_str = fs::read_to_string("tauri.conf.json")
         .expect("Failed to read tauri.conf.json");
   let config: serde_json::Value = serde_json::from_str(&config_str)
