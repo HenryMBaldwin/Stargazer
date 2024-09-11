@@ -6,7 +6,9 @@ use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ClientInstance {
-   pub updating: bool, 
+    pub time: DateTime<Utc>,
+    pub id: u128,
+    pub version: String,
 }
 
 pub struct ServerInstance {
