@@ -36,7 +36,7 @@ pub async fn check_alive() -> bool {
 pub async fn start_server() -> Result<()> {
     let mut exe_path = env::current_exe().expect("Failed to get current executable path");
     exe_path.pop();
-    let other_exe_path = exe_path.join("server.exe");
+    let other_exe_path = exe_path.join("stargazer_server.exe");
     
     Command::new(other_exe_path)
         .spawn()?;
