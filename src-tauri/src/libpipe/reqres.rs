@@ -1,3 +1,5 @@
+use std::net::Shutdown;
+
 /// Name: reqres.rs
 /// Description: This file defines the structs that are used to communicate between the server and any clients.
 /// Any functions that need to be exposed to either cleint must have request and response structs defined here.
@@ -36,6 +38,7 @@ pub enum RequestType {
     GetDatabases(GetDatabasesRequest),
     SwitchDatabase(SwitchDatabaseRequest),
     Logout(LogoutRequest),
+    ShutdownServer(ShutdownServerRequest),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -51,6 +54,7 @@ pub enum ResponseType {
     GetDatabases(GetDatabasesResponse),
     SwitchDatabase(SwitchDatabaseResponse),
     Logout(LogoutResponse),
+    ShutdownServer(ShutdownServerResponse),
 }
 
 
@@ -182,4 +186,14 @@ pub struct SwitchDatabaseRequest{
 pub struct SwitchDatabaseResponse{
     pub status: u16,
     pub databases: Vec<(String, String, bool)>,
+}
+
+
+//shutdown_server()
+#[derive(Serialize, Deserialize)]
+pub struct ShutdownServerRequest{}
+
+#[derive(Serialize, Deserialize)]
+pub struct ShutdownServerResponse{
+    pub status: u16,
 }

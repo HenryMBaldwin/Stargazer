@@ -64,6 +64,11 @@ impl InstanceManager {
         return self.ready_to_die;
     }
 
+    //sets ready to die to true
+    pub fn ready_to_die(&mut self) {
+        self.ready_to_die = true;
+    }
+
     //register a client instance
     //returns true if the client was registered
     //returns false if the client cannot be registered

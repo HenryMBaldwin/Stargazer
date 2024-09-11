@@ -20,6 +20,7 @@ use futures::lock::Mutex;
 use query_tracker::QueryTracker;
 use reqwest::StatusCode;
 use stargazer::libinstance::instance;
+use tauri::http::response;
 //tokio
 use tokio::net::TcpListener;
 
@@ -341,6 +342,9 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
                     else {
                         //tell the other server to start
                         start = true;
+                        //set ready to die to true
+                        instance_manager.lock().await.ready_to_die();
+                        
                     }
                 },
                 false => {
@@ -414,7 +418,24 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
                     serde_json::to_string(&resp).unwrap()
                 }
             }    
-        }
+        },
+        Ok(RequestType::ShutdownServer(_)) => {
+            'wait: loop {
+                if instance_manager.lock().await.has_active_queries() {
+                    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                }
+                else {
+                    instance_manager.lock().await.ready_to_die();
+                    break 'wait;   
+                }
+            }
+
+            let resp = ResponseType::ShutdownServer(ShutdownServerResponse {
+                status: StatusCode::OK.as_u16()
+            });
+
+            serde_json::to_string(&resp).unwrap()
+        },
         //Error
         Err(e) => {
             //TODO Handle Error
