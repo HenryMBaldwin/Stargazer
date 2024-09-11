@@ -7,17 +7,11 @@ use tauri::{
 use stargazer::libinstance::instance::{ClientInstance, generate_id};
 use chrono::Utc;
 use tauri_plugin_updater::UpdaterExt;
+use tauri_plugin_shell::ShellExt;
 mod pipe_client;
 
 const TRAY_ICON: Image<'_> = include_image!("./icons/icon.ico");
 fn main() {
-  //client instance representing this client
-  let client = ClientInstance {
-    time: Utc::now(),
-    id: generate_id(),
-    version: env!("VERSION").to_string(),
-  };
-
   tauri::Builder::default()
     .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
             let webview_window = app.get_webview_window("main").unwrap();
@@ -29,18 +23,19 @@ fn main() {
     }))
     .plugin(tauri_plugin_updater::Builder::new().build())
     .plugin(tauri_plugin_process::init())
+    .plugin(tauri_plugin_shell::init())
     //.manage(client)
     .setup(|app| {
       //check for updates on startup and then every hour
-      //let handle = app.handle().clone();
-      // tauri::async_runtime::spawn(async move {
-      //     let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(3600));
-      //     loop {
-      //         interval.tick().await;
-      //         println!("Client: checking for updates");
-      //         update(handle.clone()).await.unwrap();
-      //     }
-      // });
+      let handle = app.handle().clone();
+      tauri::async_runtime::spawn(async move {
+          let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(3600));
+          loop {
+              interval.tick().await;
+              println!("Client: checking for updates");
+              update(handle.clone()).await.unwrap();
+          }
+      });
       let hide_item = MenuItemBuilder::with_id("hide", "Hide").build(app)?;
       let show_item = MenuItemBuilder::with_id("show", "Show").build(app)?;
       //system tray and menu
@@ -118,7 +113,22 @@ fn main() {
 }
 
 async fn update(app: tauri::AppHandle) -> anyhow::Result<()> {
-  if let Some(update) = app.updater()?.check().await? {
+  let app_clone = app.clone();
+  if let Some(update) = app.updater_builder().on_before_exit(move || {
+    // Run the async block synchronously 
+    let app_clone_clone = app_clone.clone();
+    tauri::async_runtime::spawn(async move {
+        app_clone_clone.shell().command("taskkill")
+            .args(&["/IM", "stargazer_server.exe", "/F"])
+            .output()
+            .await
+            .unwrap();
+    });
+    })
+    .build()?
+    .check()
+    .await? {
+    
     let mut downloaded = 0;
     update.download_and_install(|chunk_length, content_length| {
       downloaded += chunk_length;
