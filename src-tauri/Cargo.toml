@@ -14,7 +14,7 @@ name = "stargazer"
 path = "src/gui/gui.rs"
 
 [[bin]]
-name = "server"
+name = "stargazer_server"
 path = "src/server/server.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -52,6 +52,7 @@ clokwerk = "0.4.0"
 uuid = {version = "1.10.0", features = ["v4"] }
 dirs-next = "2.0.0"
 tauri-plugin-process = "2.0.0-rc"
+tauri-plugin-shell = "2.0.0-rc"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
