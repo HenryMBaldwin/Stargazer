@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
 
+use actix_web::{cookie::Expiration, web::Data};
+use r2d2::NopErrorHandler;
 use reqwest::{Client, StatusCode};
 use serde_json::Value;
 use secstr::*;
@@ -11,12 +13,15 @@ use anyhow::{Result, anyhow};
 use crate::{credential_manager, query_tracker};
 use credential_manager::CredentialManager;
 use query_tracker::{QueryTracker, random_id};
+use chrono::{Utc, Duration, DateTime};
 
 pub struct OrionAPI{
     //base API URL
     base_url: String,
-    //because this will be running in the background
+    //auth token
     auth_token: Mutex<String>,
+    //UTC time that auth token expires
+    auth_expires: Mutex<DateTime<Utc>>,
     //variable to hold whether the instance currently has a valid auth token
     auth_valid: Mutex<bool>,
     //username
@@ -38,6 +43,7 @@ impl OrionAPI{
             //base API URL
             base_url: String::from("https://api.orionadvisor.com/api/v1/"),
             auth_token: Mutex::new(String::new()),
+            auth_expires: Mutex::new(Utc::now() + Duration::new(36000, 0).unwrap()),
             auth_valid: Mutex::new(false),
             username: Mutex::new(String::new()),
             password: Mutex::new(SecStr::new("".into())),
@@ -101,18 +107,55 @@ impl OrionAPI{
             let json: Value = response.
                 json::<serde_json::Value>()
                 .await?;
-            if let Some(token) = json["access_token"].as_str() {
+            let mut token = String::new();
+            let mut correct = true;
+            match json["access_token"].as_str() {
+                Some(access_token) => {
+                    token = access_token.to_string();
+                },
+                None => {
+                    println!("Could not get access token");
+                    correct = false;
+                }
+            }
+            let mut expires_in = -1;
+            match json["expires_in"].as_f64() {
+                Some(expires) => {
+                    expires_in = expires as i64; 
+                },
+                None => {
+                    println!("Could not get expires_in");
+                    correct = false;
+                }
+            }
+            if correct { 
+                //auth token
                 let mut auth_token = self.auth_token.lock().await;
                 *auth_token = token.to_string();
+                //expiration
+                let mut auth_expires = self.auth_expires.lock().await;
+                //subtract 30 minutes just to be safe
+                *auth_expires = Utc::now() + Duration::new(expires_in,0).unwrap() - Duration::new(1800, 0).unwrap();
                 //set auth token to valid
                 let mut valid = self.auth_valid.lock().await;
                 *valid = true;
                 self.credential_manager.set_username_and_password(self.username.lock().await.clone(), String::from_utf8(self.password.lock().await.unsecure().to_vec())?).await?;
+                //these should all drop anyways but I'm scared of deadlock
+                drop(auth_token);
+                drop(auth_expires);
+                drop(valid);
             }
             else {
                 *self.auth_valid.lock().await = false;
                 return Err(AuthError::Unknown(format!("Incorrect json response from Orion: {}", json.to_string())).into());
             }
+            //ensure database is switched if we currently have one selected
+            // let database_id = self.database_id.lock().await;
+            // if *database_id > 0 {
+            //     let database_id_clone = database_id.clone();
+            //     drop(database_id);
+            //     self.switch_database(database_id_clone).await?;
+            // } 
             Ok(status)
         }
         else {
@@ -141,13 +184,21 @@ impl OrionAPI{
 
     //returns whether the instance currently has a valid auth token
     pub async fn check_auth(&self) -> bool {
-        self.auth_valid.lock().await.clone()
+        //check that the auth hasn't expired
+        let now = Utc::now();
+        let auth_expires = self.auth_expires.lock().await;
+        let mut auth_valid = self.auth_valid.lock().await;
+        if now > *auth_expires {
+            *auth_valid = false;
+            
+        }
+        auth_valid.clone()
     }
 
     //gets auth token, attempts reauthentication if auth token is empty or invalid
     async fn get_auth(&self)-> Result<String>{
         //if auth token is valid then return auth token
-        if self.auth_valid.lock().await.clone() {
+        if self.check_auth().await {
             Ok(self.auth_token.lock().await.clone())
         }
         else {
@@ -157,7 +208,17 @@ impl OrionAPI{
                 if !(self.password.lock().await.unsecure().is_empty()){
                     //attempt to reauth with saved user and pass
                     match self.authenticate().await {
-                        Ok(_) => Ok(self.auth_token.lock().await.clone()),
+                        Ok(_) => {
+                            //switch databases if necassary
+                            // let database_id = self.database_id.lock().await.clone();
+                            
+                            // if database_id != 0 {
+                            //     //self.switch_database(database_id).await;
+                            //     //TODO, switch databases without recursion
+                            // }
+
+                            Ok(self.auth_token.lock().await.clone())
+                        },
                         Err(e) => Err(e)
                     }
                 }
