@@ -69,6 +69,11 @@ impl InstanceManager {
         self.ready_to_die = true;
     }
 
+    //gets server version as string
+    pub fn get_server_version(&self) -> String {
+        let version_string = self.server.version.to_string();
+        format!("0.{}.{}", &version_string[0..1], &version_string[1..])
+    }
     //register a client instance
     //returns true if the client was registered
     //returns false if the client cannot be registered

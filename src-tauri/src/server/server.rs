@@ -436,6 +436,14 @@ async fn handle_request(request: &str, orion_api: Arc<OrionAPI>, cache_controlle
 
             serde_json::to_string(&resp).unwrap()
         },
+        Ok(RequestType::GetServerVersion(_)) => {
+            let version = instance_manager.lock().await.get_server_version();
+            let resp = ResponseType::GetServerVersion(GetServerVersionResponse {
+                version,
+                status: StatusCode::OK.as_u16()
+            });
+            serde_json::to_string(&resp).unwrap()
+        }
         //Error
         Err(e) => {
             //TODO Handle Error

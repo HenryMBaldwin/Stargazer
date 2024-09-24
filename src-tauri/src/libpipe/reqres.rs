@@ -39,6 +39,7 @@ pub enum RequestType {
     SwitchDatabase(SwitchDatabaseRequest),
     Logout(LogoutRequest),
     ShutdownServer(ShutdownServerRequest),
+    GetServerVersion(GetServerVersionRequest),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -55,6 +56,7 @@ pub enum ResponseType {
     SwitchDatabase(SwitchDatabaseResponse),
     Logout(LogoutResponse),
     ShutdownServer(ShutdownServerResponse),
+    GetServerVersion(GetServerVersionResponse)
 }
 
 
@@ -195,5 +197,15 @@ pub struct ShutdownServerRequest{}
 
 #[derive(Serialize, Deserialize)]
 pub struct ShutdownServerResponse{
+    pub status: u16,
+}
+
+//get_server_version
+#[derive(Serialize, Deserialize)]
+pub struct GetServerVersionRequest{}
+
+#[derive(Serialize, Deserialize)]
+pub struct GetServerVersionResponse {
+    pub version: String,
     pub status: u16,
 }

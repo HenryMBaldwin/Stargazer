@@ -26,7 +26,7 @@ fn main() {
     .plugin(tauri_plugin_shell::init())
     //.manage(client)
     .setup(|app| {
-      //check for updates on startup and then every hour
+      //check for updates on startup and then every 10 minutes
       let handle = app.handle().clone();
       tauri::async_runtime::spawn(async move {
           let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(3600));
@@ -101,6 +101,7 @@ fn main() {
       pipe_client::get_databases,
       pipe_client::switch_database,
       pipe_client::logout,
+      pipe_client::get_server_version,
     ])
     .build(tauri::generate_context!())
     .expect("error while running tauri application")

@@ -28,7 +28,7 @@
             <li><code class="code">=Stargazer.QUERY(id, cache, [args])</code> - This formula takes in a query id, a boolean, then all args as strings. Some things to note:
                 <ul class="list-disc list-inside text-sm pl-4">
                     <li><strong>cache</strong> - If true, the formula will attempt to retrieve a cached query. Queries are cached base on their ID and arguments. This is extremely useful if
-                         you need to use the same query multiple times in the same day, and it's not sensitive to changes in that time. If you need to ensure query data is
+                         you need to use the same query multiple times in the same day, and don't need moment to moment changes. If you need to ensure query data is
                           always up to date to the moment the formula calculates, then set this to false. </li>
                     <li><strong>args</strong> - These are the arguments for the query. They must be in the same order as the prompts, and must be strings. Any dates in excel should be converted
                          to formated strings. This formula can accept an arbitrary amount of arguments.</li>

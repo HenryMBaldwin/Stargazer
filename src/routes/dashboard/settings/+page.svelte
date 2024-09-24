@@ -14,8 +14,11 @@
         selected: false,
     });
 
+    const version = writable<string>("loading...");
     onMount(async () => {
+        get_version();
         databasesStore.set(await get_databases());
+        
     });
 
     async function get_databases(): Promise<Database[]> {
@@ -81,6 +84,13 @@
         });
     }
 
+    async function get_version(){
+        await invoke("get_server_version").then((res) => {
+            const result = res as string;
+            version.set(result);
+    });
+    }
+
     let selectedDatabase: Database = {
         id: "0",
         name: "None",
@@ -108,8 +118,19 @@
 
 <div class="w-full flex flex-col items-start py-8 px-20 gap-8 max-w-prose gap-8 font-aleo">
     <h1 class="h2 font-aleo">Settings</h1>
+    <!-- Info  -->
+    <div class="flex flex-col items-start gap-4 w-full card bg-surface-50 p-4">
+        <div class="flex flex-col items-start w-full">
+            <h3 class="h3 font-aleo">Info</h3>
+            <hr class="!border-t-1 !border-secondary-500 w-full">
+        </div>
+        <div class="flex flex-row items-center justify-between w-full">
+            Version
+            <span>{$version}</span>
+        </div>
+    </div>
+    <!-- Orion Settings -->
     <div class="flex flex-col items-start gap-4 w-full card bg-surface-50 p-4 ">
-        <!-- Orion Settings -->
         <div class="flex flex-col items-start  w-full">
             <h3 class="h3 font-aleo">Orion</h3>
             <hr class="!border-t-1 !border-secondary-500 w-full"/>
@@ -121,10 +142,10 @@
                 <span>↓</span>
             </button>
         </div>
-        <!-- /Orion Settings -->
     </div>
+    <!-- /Orion Settings -->
+    <!-- General Settings -->
     <div class="flex flex-col items-start gap-4 w-full card bg-surface-50 p-4 ">
-         <!-- General Settings -->
         <div class="flex flex-col items-start  w-full">
             <h3 class="h3 font-aleo">General</h3>
             <hr class="!border-t-1 !border-secondary-500 w-full"/>
@@ -135,5 +156,5 @@
             </button>
         </div>
     </div>
-
+    <!-- /General Settings -->
 </div>
