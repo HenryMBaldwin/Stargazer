@@ -141,6 +141,7 @@ pub async fn get_server_version() -> String {
         _ => "Error: could not get server version".to_string()
     }
 }
+
 // writes request to named pipe and waits for reponse, for check_alive()
 async fn start_wait(request: &str) -> Result<String> {
     let mut client =  match PipeClient::connect(consts::PIPE_NAME) {

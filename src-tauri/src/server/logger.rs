@@ -71,4 +71,30 @@ impl Logger {
         date.format("%H:%M:%S").to_string()
     }
 
+    //ensures that the /log/general/ directory exists and returns the path to the general log
+    pub fn get_general_log_path() -> String {
+        //get todays date
+        let date = Local::now();
+        let cache_dir = cache_dir().expect("Error getting cache dir");
+        let general_log_path = cache_dir.join(format!("stargazer/logs/general/{}.log", date.format("%m-%d-%y")));
+        
+        //make sure logs/ and logs/general/ exist if they don't
+        if !general_log_path.exists() {
+            std::fs::create_dir_all(general_log_path.parent().unwrap()).expect("Error creating general log directory");
+        }
+        //create the file if it doesn't exist
+        if !general_log_path.exists() {
+            File::create(&general_log_path).expect("Error creating general log file");
+        }
+
+        general_log_path.to_str().unwrap().to_string()
+    }
+
+    //logs general message
+    pub fn log_general(&self, message: &str) -> () {
+        //ensure log exists
+        Self::get_general_log_path();
+        info!("[GENERAL]{}", message);
+    }
+
 }
